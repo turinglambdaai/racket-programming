@@ -1,8 +1,7 @@
 # Racket Programming
 
-![Language](https://img.shields.io/badge/language-MDX-6A5ACD)
+![Language](https://img.shields.io/badge/language-MDX-6A5ACD)  [![English](https://img.shields.io/badge/lang-English-blue)](README.md) [![中文](https://img.shields.io/badge/lang-中文-red)](README.zh-CN.md)
 
-[English](README.md) | [中文](README.zh-CN.md)
 
 An online book about the Racket programming language, covering everything from the core language to real-world application development and language design. Written in Chinese.
 
