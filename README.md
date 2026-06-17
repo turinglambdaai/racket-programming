@@ -1,6 +1,6 @@
 # Racket Programming
 
-[![Language](https://img.shields.io/badge/language-MDX-6A5ACD)]
+![Language](https://img.shields.io/badge/language-MDX-6A5ACD)
 
 [English](README.md) | [中文](README.zh-CN.md)
 
