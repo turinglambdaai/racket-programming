@@ -1,11 +1,10 @@
 # Racket Programming
 
-![Language](https://img.shields.io/badge/language-MDX-6A5ACD)  [![English](https://img.shields.io/badge/lang-English-blue)](README.md) [![中文](https://img.shields.io/badge/lang-中文-red)](README.zh-CN.md)
+An online book about the Racket programming language, covering everything from the core language to real-world application development and language design. Written in Chinese. Built with Next.js and MDX. Available online.
 
+![MDX](https://img.shields.io/badge/MDX-1BA1F8?logo=mdx&logoColor=white)
 
-An online book about the Racket programming language, covering everything from the core language to real-world application development and language design. Written in Chinese.
-
-Built with Next.js and MDX. Available online.
+**English** · [中文](README.zh-CN.md)
 
 ## Book Structure
 
@@ -95,3 +94,7 @@ npm run build
 ```
 
 Generates a static site in the `dist/` directory.
+
+## License
+
+This project does not currently include a license file.

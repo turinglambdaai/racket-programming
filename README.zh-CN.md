@@ -1,10 +1,10 @@
 # Racket Programming
 
-[English](README.md) | [中文](README.zh-CN.md)
+一本关于 Racket 编程语言的在线技术书籍，从核心语言到应用开发和语言设计，全面覆盖。 基于 Next.js 和 MDX 构建，可在线阅读。
 
-一本关于 Racket 编程语言的在线技术书籍，从核心语言到应用开发和语言设计，全面覆盖。
+![MDX](https://img.shields.io/badge/MDX-1BA1F8?logo=mdx&logoColor=white)
 
-基于 Next.js 和 MDX 构建，可在线阅读。
+[English](README.md) · **中文**
 
 ## 书籍结构
 
@@ -94,3 +94,7 @@ npm run build
 ```
 
 在 `dist/` 目录下生成静态站点。
+
+## 许可证
+
+本项目暂未包含许可证文件。
