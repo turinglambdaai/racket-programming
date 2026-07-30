@@ -2,7 +2,7 @@
 
 An online book about the Racket programming language, covering everything from the core language to real-world application development and language design. Written in Chinese. Built with Next.js and MDX. Available online.
 
-![MDX](https://img.shields.io/badge/MDX-1BA1F8?logo=mdx&logoColor=white)
+![MDX](https://img.shields.io/badge/MDX-1B1C1D?logo=mdx&logoColor=white) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **English** · [中文](README.zh-CN.md)
 
@@ -69,7 +69,16 @@ Racket's most unique capability — creating new languages with macros and `#lan
 - **Content**: MDX
 - **Code Highlighting**: rehype-highlight
 
-## Local Development
+## Quick Start
+
+### 1. Clone
+
+```bash
+git clone https://github.com/turinglambdaai/racket-programming.git
+cd racket-programming
+```
+
+### 2. Install & run
 
 ```bash
 npm install
@@ -77,6 +86,27 @@ npm run dev
 ```
 
 The dev server starts at `http://localhost:3000`.
+
+### 3. Build
+
+```bash
+npm run build
+```
+
+Generates a static site in the `dist/` directory.
+
+## Project Structure
+
+```
+racket-programming/
+├── app/            # Next.js App Router pages / layouts
+├── components/     # React components
+├── content/        # Book chapters as MDX (part-1 ... part-4)
+├── lib/            # Helpers (content index, etc.)
+├── scripts/        # Build / generation scripts
+├── next.config.js
+└── package.json
+```
 
 ## Adding a New Chapter
 
@@ -87,14 +117,6 @@ The dev server starts at `http://localhost:3000`.
 
 File naming convention: `01-title.mdx`, `02-next-topic.mdx` — the numeric prefix controls ordering.
 
-## Build
-
-```bash
-npm run build
-```
-
-Generates a static site in the `dist/` directory.
-
 ## License
 
-This project does not currently include a license file.
+Licensed under the [MIT License](LICENSE).

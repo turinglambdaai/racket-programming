@@ -2,7 +2,7 @@
 
 一本关于 Racket 编程语言的在线技术书籍，从核心语言到应用开发和语言设计，全面覆盖。 基于 Next.js 和 MDX 构建，可在线阅读。
 
-![MDX](https://img.shields.io/badge/MDX-1BA1F8?logo=mdx&logoColor=white)
+![MDX](https://img.shields.io/badge/MDX-1B1C1D?logo=mdx&logoColor=white) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 [English](README.md) · **中文**
 
@@ -69,7 +69,16 @@ Racket 最独特的能力——用宏和 `#lang` 创造新的编程语言。
 - **内容**：MDX
 - **代码高亮**：rehype-highlight
 
-## 本地开发
+## 快速开始
+
+### 1. 克隆仓库
+
+```bash
+git clone https://github.com/turinglambdaai/racket-programming.git
+cd racket-programming
+```
+
+### 2. 安装并运行
 
 ```bash
 npm install
@@ -77,6 +86,27 @@ npm run dev
 ```
 
 开发服务器启动在 `http://localhost:3000`。
+
+### 3. 构建
+
+```bash
+npm run build
+```
+
+在 `dist/` 目录下生成静态站点。
+
+## 项目结构
+
+```
+racket-programming/
+├── app/            # Next.js App Router 页面 / 布局
+├── components/     # React 组件
+├── content/        # 书籍章节（MDX，part-1 ... part-4）
+├── lib/            # 辅助工具（内容索引等）
+├── scripts/        # 构建 / 生成脚本
+├── next.config.js
+└── package.json
+```
 
 ## 添加新章节
 
@@ -87,14 +117,6 @@ npm run dev
 
 命名规范：`01-title.mdx`、`02-next-topic.mdx`，数字前缀控制排序。
 
-## 构建
-
-```bash
-npm run build
-```
-
-在 `dist/` 目录下生成静态站点。
-
 ## 许可证
 
-本项目暂未包含许可证文件。
+基于 [MIT 许可证](LICENSE) 授权。
