@@ -1,0 +1,246 @@
+# 自定义控件——子类化 canvas 自己画
+
+> 内置控件到头了，`racket/gui` 把真正的出口留给 `canvas%`：自己拿绘图上下文画，自己接鼠标键盘事件。子类化一个画布，到底要重写哪几个方法？
+
+你读完了《为什么 Racket GUI 写不出“现代界面”》，决定不再硬拼控件，改用 canvas 自己画。但 `canvas%` 是个类——子类化它，重写什么？鼠标点击从哪里进来？画布又怎么拿到那支“笔”？
+
+答案比你想的直接。官方文档把 `canvas%` 定义为“用于绘图和事件处理的通用窗口”，它把所有自由度交还给你，代价是几件事得自己动手。
+
+## 自定义控件的三件事
+
+`canvas%` 和 `button%`、`message%` 不一样：那两个把自己定义完了，你只能用；`canvas%` 几乎什么都没画，等着你来补。你要补的是三件事：
+
+- `on-paint` —— 决定画什么。窗口每次需要重绘时，系统调这个方法。
+- `on-event` —— 接鼠标。鼠标进入、离开、按下、抬起、移动，都从这一个方法进来，参数是一个 `mouse-event%` 对象。
+- `on-char` —— 接键盘。要不要做文本框、要不要方向键操控，都靠它。
+
+画的内容靠“绘图上下文”——一个 `dc<%>` 对象，用 `(send this get-dc)` 拿到。它就是你的笔：设颜色、画矩形、画文字，全在它身上。状态自己存：用 `define` 持有字段，状态一变就调 `(send this refresh)`，让系统择机重绘。
+
+**自定义控件全部的秘密，就在 `on-paint` 画、`on-event` 与 `on-char` 接、`refresh` 触发这三组动作里。**
+
+## 第一个自绘控件：会变色的方块
+
+从最简单的开始。画一个方块，点一下在红绿之间切换。
+
+```racket
+#lang racket/gui
+
+(define f (new frame% [label "自定义控件示例"] [width 300] [height 200]))
+
+; 子类化 canvas%，自己画、自己接事件
+(define color-box%
+ (class canvas%
+ (super-new)
+ (define color "red") ; 自持状态：当前颜色
+
+ ; 画什么：拿 DC，设笔刷，画矩形
+ (define/override (on-paint)
+ (define dc (send this get-dc))
+ (send dc set-pen "black" 1 'solid)
+ (send dc set-brush color 'solid)
+ (send dc draw-rectangle 50 50 100 100))
+
+ ; 鼠标事件：左键按下时切换颜色，再排队一次重绘
+ (define/override (on-event e)
+ (when (send e button-down? 'left)
+ (set! color (if (string=? color "red") "green" "red"))
+ (send this refresh)))))
+
+(new color-box% [parent f])
+(send f show #t)
+```
+
+跑起来：窗口里一个方块，点一下变绿，再点变红。三件事在这里齐了——`on-paint` 用 `get-dc` 拿到画布的绘图上下文，设好笔刷画矩形；`on-event` 判断左键按下，改状态，再 `refresh`。
+
+`get-dc` 拿到的 `dc<%>` 是 racket/draw 那套绘图接口：`draw-rectangle`、`draw-text`、`set-brush`、`set-pen` 全是它的方法。`canvas%` 只负责把这块绘图能力接到窗口系统上。
+
+## 加上状态与回调：自绘按钮
+
+方块不会“被点击后做某事”。把回调加进去，就是一个按钮。
+
+```racket
+#lang racket/gui
+
+(define f (new frame% [label "自绘按钮"] [width 200] [height 100]))
+
+; init-field 把 label 和 callback 暴露成创建参数
+(define my-button%
+ (class canvas%
+ (init-field label callback)
+ (super-new)
+ (define pressed? #f)
+
+ (define/override (on-paint)
+ (define dc (send this get-dc))
+ (define w (send this get-width))
+ (define h (send this get-height))
+ ; 按下时深灰，平时浅灰
+ (send dc set-brush (if pressed? "darkgray" "lightgray") 'solid)
+ (send dc set-pen "black" 1 'solid)
+ (send dc draw-rectangle 0 0 w h)
+ (send dc draw-text label 10 10))
+
+ ; 按下记状态；抬起时触发回调（点击在松手时生效）
+ (define/override (on-event e)
+ (cond
+ [(send e button-down? 'left)
+ (set! pressed? #t)
+ (send this refresh)]
+ [(send e button-up? 'left)
+ (set! pressed? #f)
+ (send this refresh)
+ (callback)]))))
+
+(new my-button%
+ [parent f]
+ [label "点我"]
+ [callback (λ () (displayln "按钮被点击"))])
+
+(send f show #t)
+```
+
+`button-down?` 和 `button-up?` 分别判断按下与抬起；`get-width`、`get-height` 取控件当前尺寸，让矩形铺满整个画布。`init-field` 把 `label`、`callback` 暴露成创建参数——这一步和你平时写 `(new button% [label ...])` 是一回事，只不过这个按钮是你自己画的。
+
+**自绘控件就是两件事在自己手里：画成什么样、点了之后干什么。** 系统的 `button%` 替你把这两件事做完了；你接管 `canvas%`，是把它俩要回来。
+
+## 想控制大小：min-width 与 on-size
+
+默认情况下，canvas 会被父容器拉伸填满剩余空间。你想给它一个最小尺寸，就得动 `area<%>` 提供的几个参数。
+
+`area<%>` 不是类，是所有可视区域共同实现的接口——`canvas%`、`panel%`、`message%` 都实现它。它的 `min-width`、`min-height`、`stretchable-width`、`stretchable-height` 都是创建时的初始参数，参与几何管理：
+
+```racket
+; 这个画布至少 120 宽 120 高，且不随窗口拉伸
+(new color-box%
+ [parent f]
+ [min-width 120]
+ [min-height 120]
+ [stretchable-width #f]
+ [stretchable-height #f])
+```
+
+canvas 被缩放时，系统会自动触发一次 `on-paint`——重画本身不用你操心。但如果你要根据新尺寸重新算布局（网格列数、文字换行、缓冲区大小），就重写从 `window<%>` 继承来的 `on-size`，新的宽高会作为参数进来：
+
+```racket
+(define cell-size 20)
+(define cols 0)
+
+(define/override (on-size w h)
+ (set! cols (quotient w cell-size))) ; 按新宽度重算列数
+```
+
+**`min-width` 与 `min-height` 在创建时给定，`on-size` 在缩放时回调——尺寸的发言权，一个在前、一个在后。**
+
+## 动起来：timer 驱动刷新
+
+静态控件到此为止。要做动画——进度条、闪烁、轮播——你得让状态定时变化，再每次 `refresh`。`timer%` 就是那个定时器。
+
+```racket
+#lang racket/gui
+
+(define f (new frame% [label "进度条"] [width 250] [height 80]))
+
+(define progress-bar%
+ (class canvas%
+ (super-new)
+ (define progress 0)
+
+ (define/override (on-paint)
+ (define dc (send this get-dc))
+ (define w (send this get-width))
+ (define h (send this get-height))
+ ; 底色
+ (send dc set-brush "white" 'solid)
+ (send dc draw-rectangle 0 0 w h)
+ ; 进度：按比例填一条蓝条
+ (send dc set-brush "blue" 'solid)
+ (send dc draw-rectangle 2 2 (* (- w 4) (/ progress 100)) (- h 4)))
+
+ ; 外部入口：设置进度并刷新
+ (define/public (set-progress v)
+ (set! progress (max 0 (min 100 v)))
+ (send this refresh))))
+
+(define bar (new progress-bar% [parent f]))
+
+(define n 0)
+; 给定 interval 即自动启动定时器，不必再调 start
+(new timer%
+ [notify-callback
+ (λ ()
+ (set! n (+ n 1))
+ (send bar set-progress n))]
+ [interval 50])
+
+(send f show #t)
+```
+
+有一个坑值得点出：`timer%` 在创建时给了 `interval`，它就开始走了——不需要、也不该再补一句 `(send tmr start ...)`。`notify-callback` 是个无参 thunk，每次到点由系统调用。
+
+**`refresh` 不立即动笔，它只是排队；真正的绘制发生在下一次 `on-paint`。** 连着调多次 `refresh`，系统会合并——这就是为什么 `on-paint` 里只该画图，不该塞耗时计算。
+
+## 另一条路：组合已有控件
+
+子类化 `canvas%` 自绘是一条路；还有一条路，是子类化容器，把现成控件装进去。比如一个“带标签的滑块”：
+
+```racket
+#lang racket/gui
+
+(define f (new frame% [label "滑块"] [width 300] [height 150]))
+
+; 子类化 vertical-panel%，把 message% 和 slider% 组合进来
+(define labeled-slider%
+ (class vertical-panel%
+ (init-field label-text min-val max-val)
+ (super-new)
+
+ (define lbl
+ (new message%
+ [parent this]
+ [label (format "~a: ~a" label-text min-val)]))
+
+ (define slider
+ (new slider%
+ [parent this]
+ [label #f]
+ [min-value min-val]
+ [max-value max-val]
+ [init-value min-val]
+ [callback (λ (s _)
+ (send lbl set-label
+ (format "~a: ~a" label-text (send s get-value)))))]))
+
+ ; 对外暴露当前值
+ (define/public (get-value)
+ (send slider get-value))))
+
+(new labeled-slider%
+ [parent f]
+ [label-text "音量"]
+ [min-val 0]
+ [max-val 100])
+
+(send f show #t)
+```
+
+这里继承的是 `vertical-panel%`——一个纵向排布的容器，`[parent this]` 把子控件挂到正在构造的 panel 上。滑块的回调接两个参数（控件本身和事件），用 `get-value` 读当前值，再回头改 `message%` 的标签。
+
+组合这条路写起来快，但它改的是“装什么”，改不了“画什么”。一旦你要统一 hover、自定义外观、整块命中——组合就到头了，得回到 canvas。
+
+**组合控件改的是“装什么”，自绘画布改的是“画什么”——复杂界面要的是后者。**
+
+## 回到 canvas 这条路
+
+四段示例走完，两条路的差别清楚了：
+
+| | 子类化 `canvas%` 自绘 | 子类化容器组合控件 |
+|---|---|---|
+| 干什么 | 自己画像素、自己接事件 | 把现成控件摆进容器 |
+| 适合 | 自定义外观、统一交互、复杂组件 | 包装一组标准控件 |
+| 上限 | 由你的绘图代码决定 | 受限于被包装控件的能力 |
+
+几何尺寸靠 `area<%>` 的 `min-width`、`min-height`；动画靠 `timer%` 加 `refresh`；画笔是 `get-dc` 返回的 `dc<%>`。把这几样凑齐，`canvas%` 就是你的画布。
+
+**`canvas%` 不是退而求其次，它是 `racket/gui` 里唯一让你从像素开始说话的地方。**
+
+> 当你重写 `on-paint` 的那一刻，你写的就不是一个控件，而是一个微型 UI 引擎的一小块。

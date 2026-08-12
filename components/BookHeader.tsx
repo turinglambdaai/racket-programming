@@ -18,7 +18,7 @@ export default function BookHeader() {
           {mobileMenuOpen ? <X className="w-5 h-5 text-sand-700" /> : <Menu className="w-5 h-5 text-sand-700" />}
         </button>
         <Link href="/" className="ml-3 font-bold text-sm text-sand-900">
-          Racket 编程
+          Racket 编程入门
         </Link>
       </header>
       {mobileMenuOpen && (

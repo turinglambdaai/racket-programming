@@ -1,0 +1,173 @@
+# 语言声明与 require——Racket 的模块机制
+
+> `#lang` 决定一个文件用什么语言写，`require` 在这门语言里加载别的模块——新手最常把这两件事搞混。分清它们，Racket 的模块机制就不再是一团乱麻。
+
+你在每个 `.rkt` 文件第一行写过 `#lang racket`，也在代码里写过 `(require racket/list)`。两者都像是在"拿东西进来"，于是当你在 GUI 例子里同时看到 `#lang racket/gui` 和 `(require racket/gui/base)`，自然会问：它们是不是同一件事的两种写法？
+
+不是。分不清这两者，你会在第一次想拆分模块、或第一次想给文件换个语言时卡住。要从根上分清它们，得先看清 Racket 里最基本的一个单位——模块。
+
+## 每个文件都是一个模块
+
+在 Racket 里，一个 `.rkt` 文件就是一个模块。模块不是"装了一堆函数的文件"那么简单，它有自己的名字、自己的作用域、自己对外暴露的接口，还能被别的模块加载。
+
+每个模块都必须先回答一个问题：这份代码用什么语言来写？答案写在文件第一行。
+
+```racket
+#lang racket
+;; 从这一行往下，整个文件用 racket 语言的语法来读
+(define (square x) (* x x))
+```
+
+这一行 `#lang racket` 不是普通的函数调用，也不是引入一个库，它在给整个文件定调。
+
+## `#lang` 是 `module` 的简写
+
+Racket 有一个更底层的模块写法，叫 `module` 表：
+
+```racket
+;; 文件 cake.rkt 等价的"长写法"
+(module cake racket
+ (provide print-cake)
+
+ (define (print-cake n)
+ (printf "~a\n" n)))
+```
+
+`module` 的第一个参数是模块名，第二个参数是"初始模块路径"，后面才是模块体。你在文件第一行写的 `#lang racket`，本质上就是这条长写法的简写——文件叫 `cake.rkt`，`#lang racket` 就展开成 `(module cake racket ...)`，名字直接取自文件名。
+
+注意那个初始模块路径 `racket`。`module` 表自己不会凭空提供 `define`、`lambda`、`require`，这些语法本身也需要被导入。初始模块路径就是第一个被导进来的模块，它给整个模块搭出一套可用的语法。
+
+**`#lang` 选的是语言，不是库。**
+
+## 语言本身就是一个模块
+
+顺着上一节推一步：既然 `#lang racket` 是把 `racket` 当初始模块导进来，那这个叫 `racket` 的"语言"到底是什么？
+
+它就是一个模块——一个提供了 `define`、`lambda`、`if`、`require`、`provide` 等基础语法的模块。你能在 `#lang racket` 的文件里写 `define`，是因为 `racket` 这个模块把它提供给了你。
+
+换一个初始模块，整套语法就跟着变：
+
+```racket
+#lang scribble/manual
+;; 同一个 Racket 编译器，但这份文件的语法完全不像 Lisp
+;; 它是 Scribble 文档语言，@section、@bold{...} 才是它的样子
+```
+
+**在 Racket 里，"语言"本身就是一个模块。** 语言没有写死在编译器里，`#lang` 只是替你挑了第一个要导入的模块。这就是为什么 Racket 自称"一门用来造语言的语言"。
+
+## `require` 在当前语言上加载模块
+
+`require` 做的事完全不同。它不改文件的语言，只是在这门语言的基础上，把别的模块导出的东西拿进来用。
+
+```racket
+#lang racket
+
+(require racket/list)
+;; remove-duplicates、group-by 等函数现在可用了
+;; 但文件的语言还是 racket，语法一点没变
+
+(remove-duplicates '(1 1 2 3 3 3))
+;; '(1 2 3)
+```
+
+`require` 后面跟的是一个模块路径，最常见的几种写法对应不同的寻址方式：
+
+```racket
+(require racket/list) ;; 收藏集里的模块，按名字找
+(require racket/tcp) ;; 同上：racket 收藏集里的 tcp.rkt
+(require "utils.rkt") ;; 同目录下的文件模块，按相对路径
+(require "../shared/helpers.rkt") ;; 相对路径，上一级目录里的文件
+```
+
+收藏集（collection）是 Racket 组织库的方式：一组安装在系统里的模块，用一个名字索引。`racket/list` 就是 `racket` 收藏集里的 `list.rkt` 模块。你自己写的本地文件则用字符串相对路径引用。两种写法背后都是模块路径，`require` 只管按路径把模块的导出拿进来。
+
+**`require` 不改变语言，只在当前语言里加载模块。**
+
+![racket-module-lang-require](/images/racket-module-lang-require.svg)
+
+## `provide` 决定模块对外暴露什么
+
+`require` 能拿进来什么，取决于对方 `provide` 了什么。一个模块默认是完全封闭的——你在里面 `define` 的所有东西，外部一律看不见。想让外部用，必须显式地 `provide` 出去。
+
+```racket
+;; 文件 math-tools.rkt
+#lang racket
+
+(provide square sum)
+
+(define (square x) (* x x)) ;; 对外可见
+(define (sum xs) (apply + xs)) ;; 对外可见
+(define (helper x) (add1 x)) ;; 没 provide，外部拿不到
+```
+
+另一个文件要用它，就 `require` 这个文件路径：
+
+```racket
+;; 文件 main.rkt
+#lang racket
+
+(require "math-tools.rkt")
+
+(square 5) ;; 25
+(sum '(1 2 3)) ;; 6
+;; (helper 5) ;; 报错：helper 没有被 provide，外部访问不到
+```
+
+`provide` 有三种常用的批量写法，写库时几乎绕不开：
+
+```racket
+(provide (all-defined-out)) ;; 模块里所有 define 的绑定都导出
+(provide (all-from-out racket/list)) ;; 把从 racket/list 进来的，原样再转手导出
+(provide (rename-out [square sq])) ;; 导出时改名：square 对外叫 sq
+```
+
+`all-defined-out` 是图省事，个人脚本里常用；`all-from-out` 用来做"中转站"，把别人模块的导出透传给自己的用户；`rename-out` 用来规避命名冲突，或换个更顺口的名字对外。
+
+**没有 `provide`，模块就是一只黑箱。**
+
+## `#lang racket/gui` 不等于 `require`
+
+回到开头的疑问。`#lang racket/gui` 和 `#lang racket` 加 `(require racket/gui/base)`，确实都能让你写 GUI，但它们不是一回事。
+
+按官方文档，`racket/gui` 是一门独立的语言，它"把 `racket` 语言的所有绑定，与 `racket/gui/base`、`racket/draw` 两个模块合并在一起"。换句话说，换语言的同时，你默认拿到的绑定比单独 `require` 一个 GUI 库要多——至少多出一个 `racket/draw`。
+
+| | `#lang racket/gui` | `#lang racket` 加 `require` |
+|---|---|---|
+| 改变文件的语言 | 是 | 否 |
+| 默认拿到 `racket/draw` | 是 | 否（要单独 `require`） |
+| 适合 | 单文件 GUI 小程序 | 大项目，依赖想保持可控 |
+
+工程代码里更常见的是后者：保持 `#lang racket`（或更精简的 `#lang racket/base`），把 GUI 当成一个普通的库按需 `require`。这样每个文件的依赖是透明的，整份文件的语言也保持一致。
+
+## 子模块：模块里再套一个模块
+
+模块还能嵌套。在一个模块内部声明另一个模块，就是子模块。最实用的是 `module+`：它声明的子模块能看到外层模块的所有绑定（包括没 `provide` 的），而且文件里多个同名的 `module+` 会自动合并成同一个子模块。
+
+最常见的用法是写测试：
+
+```racket
+;; 文件 physics.rkt
+#lang racket
+
+(provide drop)
+
+(define (drop t) ;; 主模块的业务代码
+ (* 1/2 9.8 t t))
+
+(module+ test ;; 名为 test 的子模块
+ (require rackunit)
+ (check-= (drop 0) 0 1e-9)
+ (check-= (drop 10) 490 1e-9))
+```
+
+命令行跑 `raco test physics.rkt`，只会执行 `test` 子模块里的测试；而别的文件把 `physics.rkt` 当库 `require` 时，测试代码根本不会跑，连加载都不会加载。子模块还可以用 `module*` 声明（子模块能引用外层，外层不能引用子模块），或用嵌套的 `module` 声明（方向相反），但日常 90% 的场景，`module+` 就够了。
+
+## 三个动作，一个对象
+
+把前面几点收拢一下。Racket 模块机制里，你最常打交道的就三个动作：
+
+- `#lang` 选语言——也就是挑那个搭起全部语法的初始模块
+- `require` 引模块——把别的模块 `provide` 出来的绑定拿进来
+- `provide` 开窗口——决定自己的哪些绑定对外可见
+
+**`#lang` 选语言，`require` 引模块，`provide` 开窗口——三者操作的其实是同一件东西：模块。** 一旦想通 `#lang` 和 `require` 不是两个层级的机制、而是同一个模块机制的两端，Racket 的目录结构、包管理、乃至亲手造一门新语言，就都连成了同一条线。

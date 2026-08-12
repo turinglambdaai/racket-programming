@@ -1,0 +1,244 @@
+# 还在用字符串写 HTMLRacket xexpr 让你像写代码一样构建页面
+
+> 在多数语言里，HTML 是一段要拼接、要转义、要忍受的字符串。在 Racket 里，HTML 是一种数据结构——你像写代码一样构建它，不用碰字符串。
+
+在多数编程语言中，HTML 是一段需要"忍受"的字符串；而在 Racket 里，HTML 是一种数据结构。这不是修辞，而是 Racket Web 设计的核心思想。本文将带你从零开始，理解为什么用 S-expression 写 HTML 是自然、清晰且强大的。
+
+## HTML 的本质：不是文本，而是结构
+
+从浏览器的角度看，HTML 是文本；但从程序的角度看，它更接近一棵树：
+
+```html
+<div>
+ <h1>Hello</h1>
+ <p>Welcome</p>
+</div>
+```
+
+结构上可以理解为：
+
+```text
+div
+ ├─ h1 → "Hello"
+ └─ p → "Welcome"
+```
+
+如果你熟悉 Lisp 或 Racket，这种结构会立刻让你想到一件事：
+
+> **这正是列表和嵌套列表最擅长表达的东西。**
+
+## 二、什么是 xexpr？
+
+**xexpr（XML Expression）** 是 Racket 用来表示 HTML / XML 的一种数据约定。
+
+一句话定义：
+
+> **xexpr = 用 S-expression 表示 HTML 结构**
+
+### 最基本的例子
+
+HTML：
+
+```html
+<h1>Hello</h1>
+```
+
+xexpr：
+
+```racket
+'(h1 "Hello")
+```
+
+- `h1` 是标签名
+- `"Hello"` 是子节点
+
+### 嵌套结构
+
+HTML：
+
+```html
+<div>
+ <h1>Hello</h1>
+ <p>Welcome</p>
+</div>
+```
+
+xexpr：
+
+```racket
+'(div
+ (h1 "Hello")
+ (p "Welcome"))
+```
+
+规律非常清晰：
+
+> **列表的第一个元素是标签，其余元素是子节点**
+
+## 三、xexpr 不是字符串，而是普通数据
+
+这一点非常重要。xexpr 并不是“模板语法”，它只是 **普通的 Racket 列表**。
+
+你可以：
+
+- 把它赋值给变量
+- 作为函数返回值
+- 用 `map`、`if`、`cond` 操作它
+
+## 四、在 Web Server 中使用 xexpr
+
+Racket 的 Web Server 可以直接把 xexpr 作为响应返回。
+
+一个最小示例：
+
+```racket
+#lang racket
+
+(require web-server/servlet
+ web-server/servlet-env)
+
+(define (start request)
+ '(html
+ (head
+ (title "xexpr Example"))
+ (body
+ (h1 "Hello")
+ (p "This page is written in xexpr."))))
+
+(serve/servlet start
+ #:port 8000
+ #:servlet-path "/"
+ #:launch-browser? #t)
+```
+
+运行后，浏览器会正确渲染页面。
+
+这里的关键点在于：
+
+> **你返回的是结构，Racket 负责把它转成 HTML**
+
+## 五、HTML 属性如何表示？
+
+HTML：
+
+```html
+<p class="intro">Hello</p>
+```
+
+对应的 xexpr：
+
+```racket
+'(p ((class "intro")) "Hello")
+```
+
+属性规则统一而明确：
+
+```racket
+(tag
+ ((attr-name attr-value) ...)
+ child ...)
+```
+
+例如：
+
+```racket
+'(a ((href "https://racket-lang.org"))
+ "Racket")
+```
+
+不需要字符串拼接，也不会产生语法错误。
+
+## 六、xexpr 的真正优势：可编程性
+
+xexpr 的价值并不在于“能写 HTML”，而在于：
+
+> **HTML 终于可以像程序一样被组合、抽象和复用。**
+
+### 1 条件生成页面
+
+```racket
+(define (message logged-in?)
+ `(div
+ (h1 "Welcome")
+ ,@(if logged-in?
+ '((p "You are logged in"))
+ '((p "Please log in")))))
+```
+
+这里使用了 Racket 的反引号语法：
+
+- `` ` ``：构造结构
+- `,` / `,@`：插入计算结果
+
+HTML 成了表达式的一部分。
+
+### 2 列表驱动的页面生成
+
+```racket
+(define (item-list items)
+ `(ul
+ ,@(map (λ (item)
+ `(li ,item))
+ items)))
+```
+
+这段代码表达的不是“拼页面”，而是：
+
+> **对一个列表进行映射，得到另一棵结构**
+
+## 七、页面就是函数
+
+一旦你接受 xexpr 是数据，一个自然的结论是：
+
+```racket
+(define (page title body)
+ `(html
+ (head (title ,title))
+ (body ,@body)))
+```
+
+使用方式：
+
+```racket
+(page "Home"
+ '((h1 "Home")
+ (p "Welcome to this site.")))
+```
+
+这里没有模板，没有宏法术，只有函数。
+
+## 八、xexpr 的心智模型
+
+可以用三句话概括 xexpr：
+
+1. HTML 是树
+2. 树可以用列表表示
+3. 列表是 Lisp 的母语
+
+因此：
+
+> **在 Racket 里写 HTML，不是绕远路，而是走直线。**
+
+## 九、对新手来说，为什么这是好事？
+
+对于没有前端背景的人，xexpr 有明显优势：
+
+- 没有额外的模板语言
+- 没有隐藏的上下文变量
+- 没有字符串层面的错误
+
+你看到的，就是你构造的数据。
+
+## 结语
+
+在 Racket 中，HTML 不再是“页面文件”，而是你程序中的一种 **普通结构值**。
+
+一旦你理解了 xexpr：
+
+- 页面可以被函数化
+- 结构可以被组合
+- Web 编程不再是特殊领域
+
+它只是你熟悉的 Racket 世界，在网络上的一次自然延伸。
+
+Web 讲到这里，你已经能用 Racket 写服务、存数据、生成页面、部署上线。下一篇换个方向——当 Racket 自己的能力不够用时，怎么通过 FFI 调用 C 的库，把两门语言的能力拼在一起。

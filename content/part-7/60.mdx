@@ -1,0 +1,105 @@
+# 如何构建和运行 ActivityLog2
+
+> 一个真实的、有实际功能的开源 Racket 桌面应用长什么样？ActivityLog2 是最好的答案——这篇带你把它从源码构建到跑起来。
+
+[ActivityLog2](https://github.com/alex-hhh/ActivityLog2) 是一个基于 Racket 的开源原生桌面 GUI 工程。本文将详细介绍从环境搭建到运行的完整流程。
+
+## 构建和运行概览
+
+ActivityLog2 依赖若干额外的 Racket 包。官方版本会将这些依赖放在项目的 `pkgs` 子目录下并纳入版本控制。在构建或运行应用程序之前，需要先安装这些包。安装完成后，这些包对所有 Racket 程序都可用（Racket 不支持包的虚拟环境）。
+
+你可以选择两种安装方式：
+
+1. **使用项目自带的依赖包**（推荐方式，保证与 ActivityLog2 版本兼容）。
+2. **从 Racket 官方包目录安装**：`tzinfo`、`tzgeolookup`、`data-frame`、`plot-container`、`gui-widget-mixins`、`map-widget`，以及测试所需的 `al2-test-runner`。
+
+>
+> 这种方式可能导致版本不一致，从而引发兼容性问题。
+
+## 克隆仓库
+
+克隆 ActivityLog2 仓库：
+
+```bash
+git clone https://github.com/alex-hhh/ActivityLog2.git
+cd ActivityLog2
+```
+
+## 设置包目录
+
+将项目自带的 `pkgs/` 子目录加入 Racket 的包目录。使用以下命令（Windows 下也可通过 Git Bash 执行）：
+
+```bash
+bash etc/scripts/setup-catalog.sh pkgs/
+```
+
+此命令会在 `pkgs/` 目录下创建一个 Racket 包目录索引，并将其添加到 Racket 的包目录配置中，使得后续的 `raco pkg install` 能够找到项目自带的包。
+
+## 安装依赖项
+
+包目录设置完成后，安装依赖：
+
+```bash
+raco pkg install --auto al2-dependencies
+```
+
+## 运行应用程序
+
+依赖安装完成后，你有以下几种方式运行 ActivityLog2：
+
+1. **直接运行 Racket 脚本**：
+
+```bash
+racket run.rkt
+```
+
+2. **在 DrRacket 中运行**：打开 `run.rkt` 文件并点击 " 运行 "。
+
+运行时也可以指定数据库文件作为参数：
+
+```bash
+racket run.rkt /path/to/database.sqlite
+```
+
+## 构建可执行文件
+
+如果需要生成独立应用：
+
+```bash
+racket build.rkt
+```
+
+此命令会执行以下操作：
+1. 编译 .zo 文件
+2. 构建应用程序可执行文件
+3. 将可执行文件打包到 `dist` 目录
+
+生成的可执行文件包括：
+
+| 可执行文件 | 用途 |
+|-----------|------|
+| `ActivityLog2.exe` (Windows) / `ActivityLog2` ( 其他平台 ) | 主应用程序 |
+| `AL2-Climb-Analysis.exe` (Windows) / `AL2-Climb-Analysis` ( 其他平台 ) | 攀爬分析工具 |
+| `AL2-Activity-Import.exe` (Windows) / `AL2-Activity-Import` ( 其他平台 ) | 活动导入工具 |
+
+这些独立应用可在未安装 Racket 的环境下运行。
+
+## 生成安装程序（仅 Windows）
+
+在 Windows 平台上，如果安装了 Inno Setup，可以生成安装程序。在 `build.rkt` 中提供了 `mkinstaller` 函数，但默认的构建流程不会调用它。要生成安装程序，需要在 Racket 中手动调用：
+
+```racket
+ racket -e "(require \"build.rkt\") (mkinstaller)"
+```
+
+或者在 DrRacket 中打开 `build.rkt` 并调用 `(mkinstaller)` 函数。
+
+安装程序会在 `dist` 目录下生成，版本号会根据 `version.txt` 中的内容自动添加。如果在 Azure 构建环境中，还会附加构建 ID。
+
+## 总结
+
+- 项目自带依赖包在 `pkgs/` 目录下，推荐使用它们以确保兼容性
+- 使用 `setup-catalog.sh` 设置包目录后，通过 `raco pkg install --auto al2-dependencies` 安装
+- 使用 `racket run.rkt` 运行应用程序
+- 使用 `racket build.rkt` 构建独立可执行文件
+- Windows 平台可通过调用 `mkinstaller` 函数生成 Inno Setup 安装程序

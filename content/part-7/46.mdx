@@ -1,0 +1,127 @@
+# 读懂 Racket 官方文档——Guide、Reference 与 contract
+
+> Racket 文档读不懂，多半是入口选错了：Guide 讲思路，Reference 定规格，那一串方括号和箭头是 contract。你照着教程敲过几段代码，可曾真正打开过 Reference？
+
+你照着教程敲了几段 Racket，想自己写点什么。打开官方文档，满屏的方括号、冒号、`->`、`or/c`，像另一种语言。搜一个 `map` 的用法，跳进一个布满 BNF 产式的页面，比函数本身还难懂。
+
+这不是英语不够，是文档的定位和你的预期错位了。Racket 官方文档不是教程，是规格说明书。 **书籍教你思考，文档教你实践。** 划清这条界线，文档就从一堵墙变成一把工具。
+
+## Guide 是教程，Reference 是规格
+
+docs.racket-lang.org 上最常被打开的两本，是《The Racket Guide》和《The Racket Reference》。它俩不是同一件事的两种写法，分工完全不同。
+
+《The Racket Guide》是教程。它按概念推进，配大量可运行的示例，告诉你为什么这么设计。想搞懂模块、宏、continuation 怎么回事，读 Guide。它默认你顺着读，像一本会说话的书。
+
+《The Racket Reference》是规格。它逐条列出每个绑定——一行签名、一段契约、几行文字、几个例子，没有半句多余。同一个 `map`，Guide 花一页讲它和 `for/list` 的取舍，Reference 只给你精确签名和边界行为。它假设你已知道要找什么，来这里只是核对。
+
+旁边还挂着一张 Racket Cheat Sheet，一页纸的速查表，忘了函数名去翻它最快。
+
+**学概念读 Guide，查用法查边界读 Reference。**
+
+## 拆开一份签名
+
+挑一个看着吓人的——`call-with-output-file`。Reference 里它的条目长这样：
+
+```racket
+(call-with-output-file path
+ proc
+ [#:mode mode-flag
+ #:exists exists-flag]) → any
+
+ path : path-string?
+ proc : (output-port? . -> . any)
+ mode-flag : (or/c 'binary 'text) = 'binary
+ exists-flag : (or/c 'error 'replace 'truncate ...) = 'error
+```
+
+`exists-flag` 实际能取 `append`、`update`、`truncate/replace` 等多个值，完整签名还多一个 `#:permissions` 关键字；这里省掉是为了看清结构。五个符号认全，这页就读通了：
+
+- 方括号 `[]`：可选。`path`、`proc` 没套方括号，必填；两个 `#:` 套在方括号里，可选。
+- 关键字 `#:`：按名字给参数。调用时写 `#:mode 'text`，顺序随意、自带说明。
+- 冒号 `:`：后面是类型约束。`path : path-string?` 意思是 `path` 必须满足 `path-string?`。
+- 等号 `=`：默认值。`(or/c 'binary 'text) = 'binary` 表示不给就当 `'binary`。
+- 箭头 `→`：返回类型。这里返回 `any`，意味着返回什么由你传进去的 `proc` 决定。
+
+最朴素的调用只要必填的两项：
+
+```racket
+(call-with-output-file "out.txt"
+ (λ (out) (display "hi" out))) ; out 是 output-port，返回 void
+```
+
+## contract：箭头两边的类型
+
+签名里冒号后面那些东西，是 Racket 的契约（contract）。`path-string?`、`procedure?` 这种带问号的，是普通谓词；`or/c`、`->` 这些是契约组合器，把简单谓词拼成复杂约束。
+
+最难啃的一行是 `proc : (output-port? . -> . any)`。拆开看：`proc` 必须是个函数，它吃一个 `output-port?`，吐一个 `any`。中间那对点是 Racket 的中缀写法，`(a . -> . b)` 读进去就是 `(-> a b)`——纯粹为了写着像数学里的 A → B。
+
+顺手把 `any` 说清楚：它表示不对返回值做检查，只能写在箭头右边，函数返回几个值都行；`any/c` 则是“任意单个值”，到处都能用。`call-with-output-file` 把 `proc` 写成 `(output-port? . -> . any)`，自己又返回 `any`，意思是 `proc` 吐出什么，它就原样回传什么。
+
+常用的契约组合器就那么几个：
+
+```racket
+(or/c number? string?) ; 数字或字符串，二选一
+(and/c number? positive?) ; 同时是数字且为正
+(listof string?) ; 每个元素都是字符串的列表
+(cons/c symbol? number?) ; car 是 symbol、cdr 是 number 的 pair
+(-> number? number? number?) ; 吃两个数、还一个数的函数
+```
+
+带可选参数或关键字参数的函数，用 `->*`，三组括号分别是必填、可选、返回：
+
+```racket
+(->* (number?) ; 必填：一个数
+ (string?) ; 可选：一个字符串
+ boolean?) ; 返回：布尔值
+```
+
+**contract 是运行时检查的契约，不是静态类型。** 默认的 Racket 没有编译期类型系统，这些约束只在程序跑到那一步时才生效，违反了就抛 contract violation。想知道一个值要满足什么，看契约；想要编译期保证，那是 Typed Racket 的地盘。
+
+## 把文档拉到眼前
+
+`raco docs` 是把文档拽到眼前的最快路径。命令行敲：
+
+```text
+raco docs map
+```
+
+它打开浏览器，在所有已安装的文档里——核心文档加上你装的包——搜这个词。函数名、模块名、甚至报错信息里的关键词，都能这么查；搜不到就换英文、换同义词，或者退回 Guide 目录按章节找。
+
+在 DrRacket 里更快：光标停在某个标识符上按 F1，跳到它的文档搜索结果；按 F2 直接弹一个签名框，连页都不用跳。看到不熟的函数，F1 比搜索引擎快。
+
+网页端 docs.racket-lang.org 右上角有搜索框，能搜的东西比你想的多：
+
+- 函数名：`string-split`
+- 概念名：`pattern matching`
+- 符号本身：`#:keyword`
+
+## 从示例反查
+
+Reference 里几乎每个函数都附了示例，长这样：
+
+```racket
+> (map add1 '(1 2 3))
+'(2 3 4)
+```
+
+`>` 开头是你在 REPL 里敲的，下一行是求值结果，复制进 DrRacket 或 REPL 就能跑。
+
+**签名读不懂时，示例永远先开口。** 一段 `(map add1 '(1 2 3))` 比盯着 `proc : procedure?` 想五分钟更直白。先扫示例看懂行为，再回头对签名抠细节。
+
+报错信息也指向文档。撞上一个 contract violation：
+
+```racket
+; map: contract violation
+; expected: procedure?
+; given: 5
+```
+
+它把期望的契约（`procedure?`）和实际给的值（`5`）都写清楚了。拿 `procedure?` 或 `map` 回文档一查，就知道第一个参数必须是函数，而你传了数字。
+
+每个函数条目末尾还会列相关函数。查 `map` 顺带看到 `for-each`、`andmap`、`ormap`；查 `filter` 看到 `partition`、`remove`。一次查询，顺藤摸瓜。
+
+> Guide 教你怎么想，Reference 告诉你到底是什么。两者在手，Racket 整座生态就向你打开了。
+
+到这里，卷一到卷六的旅程走完了——你从"编程是什么"出发，经过了函数式、命令式、面向对象、GUI、宏、延续，直到亲手造一门语言。你已经理解了 Racket，也理解了编程语言为什么是这个样子。
+
+接下来的卷七，我们换一个节奏：从"理解语言"转向"用语言做产品"。下一篇带你认识 `raco`——Racket 工程体系的控制中心。从它开始，你会逐步掌握把代码变成能上线产品的一整套工具链。

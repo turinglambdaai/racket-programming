@@ -3,196 +3,715 @@
     {
       "id": "part-1",
       "number": 1,
-      "title": "Racket 语言核心",
-      "subtitle": "Core Language",
-      "description": "从零开始掌握 Racket 的核心概念：S-表达式、数据类型、函数、控制流、列表与递归、结构体以及模块系统。",
+      "title": "起点：编程与计算的本质",
+      "subtitle": "Foundations",
+      "description": "回答\"编程是什么、计算是什么、Racket 值不值得学\"。全书的地基——零基础读者从这里建立直觉，有经验读者从这里对齐认知。",
       "chapters": [
         {
-          "slug": "01-introduction",
-          "title": "Racket 简介",
-          "description": "了解 Racket 的起源、设计理念以及为什么它值得学习。"
+          "slug": "1",
+          "title": "写几行文字，电脑就会动",
+          "description": "这是全书的第一章，不教你写任何一行 Racket。它只回答一个每个人都会问、却很少有人讲清楚的问题：为什么写几行文字，电脑就会动？"
         },
         {
-          "slug": "02-sexp-syntax",
-          "title": "S-表达式与语法",
-          "description": "深入理解 Racket 的根本语法形式——符号表达式，以及点对和表的化简规则。"
+          "slug": "2",
+          "title": "两种回答——图灵机与λ演算",
+          "description": "第一章我们说清了\"编程是什么\"。这一章再往深挖一层：电脑到底在干什么？这个问题，1930 年代有两个数学家给了两个绝妙的回答——你今天写的每一行代码，都是这两个回答的后代。"
         },
         {
-          "slug": "03-data-types",
-          "title": "基本数据类型",
-          "description": "掌握 Racket 中的数字、字符串、列表、符号等核心数据类型。"
+          "slug": "3",
+          "title": "Racket 不是教学语言",
+          "description": "很多人第一次听说 Racket，是在某门编程入门课上。于是它被贴上一个标签：\"教学语言\"——言下之意，玩具、不顶用。这个标签错得离谱。"
         },
         {
-          "slug": "04-functions",
-          "title": "函数与 lambda",
-          "description": "学习函数定义、lambda 表达式、高阶函数、闭包和递归。"
+          "slug": "4",
+          "title": "装好 Racket，认出 DrRacket 的两扇窗",
+          "description": "装好 Racket、打开 DrRacket，你就拿到了一个“写一行、立刻看到结果”的练功房——Racket 是边跑边学的语言，环境装好，学习就顺了一半。"
         },
         {
-          "slug": "05-control-flow",
-          "title": "控制流",
-          "description": "掌握条件表达式、循环构造、let 绑定和 local 定义。"
-        },
-        {
-          "slug": "06-lists-recursion",
-          "title": "列表与递归",
-          "description": "深入列表操作与递归思维，包括尾递归优化和常用列表高阶函数。"
-        },
-        {
-          "slug": "07-structs-vectors",
-          "title": "结构体与向量",
-          "description": "使用结构体构建自定义数据类型，用向量实现高效随机访问。"
-        },
-        {
-          "slug": "08-modules",
-          "title": "模块系统",
-          "description": "理解 Racket 的模块机制，学会组织代码、管理依赖和提供接口。"
+          "slug": "5",
+          "title": "导读——为什么学、怎么读",
+          "description": "在打开任何一篇具体教程之前，先建立 Racket 的全局认知：它究竟是什么、为什么值得花时间学，以及本系列 40 篇该怎么读。"
         }
       ]
     },
     {
       "id": "part-2",
       "number": 2,
-      "title": "高级特性",
-      "subtitle": "Advanced Features",
-      "description": "掌握 Racket 的进阶能力：模式匹配、宏系统、异常处理与契约编程、并发编程以及正则表达式。",
+      "title": "基础：用 Racket 写点什么",
+      "subtitle": "Basics",
+      "description": "回答\"用 Racket 写点什么，最少要知道什么\"。从括号的含义到数据、列表、结构体、函数，建立 Racket 代码的基本形状。",
       "chapters": [
         {
-          "slug": "01-pattern-matching",
-          "title": "模式匹配",
-          "description": "使用 match 表达式优雅地解构和处理数据。"
+          "slug": "6",
+          "title": "括号不是负担——Racket 的结构之美",
+          "description": "Racket 满屏的括号不是语法噪音，而是一种把程序形态削减到极致的设计——同一套括号既是代码，也是数据，这就是同像性（homoiconicity）。"
         },
         {
-          "slug": "02-macros",
-          "title": "宏系统",
-          "description": "理解 Racket 宏的工作原理，学习语法变换和卫生宏。"
+          "slug": "7",
+          "title": "Racket 的数据——原子与复合",
+          "description": "Racket 的数据看似五花八门，其实只分两半：原子（数、字符串、布尔、符号、字符）不可再拆，复合（pair 与 list）把原子粘起来。可它们为什么都能塞进同一套括号？"
         },
         {
-          "slug": "03-exceptions-contracts",
-          "title": "异常与契约",
-          "description": "使用异常处理运行时错误，用契约系统保障接口的正确使用。"
+          "slug": "8",
+          "title": "列表——Racket 的主力数据结构",
+          "description": "在 Racket 里，列表不是数组，而是一个个 cons 单元串成的链——理解了这根链，`first`、`rest`、`map`、`filter` 才算有了根。"
         },
         {
-          "slug": "04-concurrency",
-          "title": "并发与线程",
-          "description": "探索 Racket 的线程、通道和并发编程模型。"
+          "slug": "9",
+          "title": "结构体——给数据一个明确的形状",
+          "description": "列表能装一切，代价是你得记住每个位置代表什么。`struct` 给每个字段一个名字，顺手生成谓词、访问器和不可变性。为什么树、节点、配置这类复合数据，一到 `struct` 手里就突然清楚？"
         },
         {
-          "slug": "05-regex-parsing",
-          "title": "正则表达式与解析",
-          "description": "掌握正则表达式操作，以及使用解析器组合子处理结构化文本。"
+          "slug": "10",
+          "title": "函数与闭包——Racket 里动作如何成为值",
+          "description": "在 Racket 里，函数和数字、字符串一样是一个值——能存进变量、塞进列表、传来传去。而让这一切成立的，是闭包：函数随身带着它出生时的环境。"
+        },
+        {
+          "slug": "11",
+          "title": "符号表达式——Lisp 元编程的根基",
+          "description": "Lisp 用一套括号写两样东西——程序，和程序操作的数据；这种“代码即数据”的语法叫符号表达式，是 Lisp 元编程的根基。"
+        },
+        {
+          "slug": "12",
+          "title": "从嵌套到管道——Racket 函数组合的两种方向",
+          "description": "Racket 里把几个函数拼成一个新函数，用 `compose`；想让数据从左流到右、一眼读懂，用管道。两者方向相反，各管一摊。"
+        },
+        {
+          "slug": "13",
+          "title": "告别循环——map、filter 与 fold 的列表处理",
+          "description": "处理列表不用写循环：map 做转换、filter 筛选、fold 压成一个值、apply 把列表摊开成参数。你描述“结果是什么”，而不是指挥“每一步怎么做”。"
         }
       ]
     },
     {
       "id": "part-3",
       "number": 3,
-      "title": "应用开发实战",
-      "subtitle": "Applied Development",
-      "description": "用 Racket 构建真实应用：Web 服务、数据库操作、RESTful API、桌面 GUI 应用、命令行工具，以及综合项目实战。",
+      "title": "函数式：不动状态的计算",
+      "subtitle": "Functional",
+      "description": "回答\"不动用状态，怎么完成计算\"。从高阶函数、递归到 λ 演算、Y-Combinator、迷你解释器——Racket 的核心范式。",
       "chapters": [
         {
-          "slug": "01-web-server",
-          "title": "Web 服务器基础",
-          "description": "使用 Racket 内置的 Web 服务器框架构建 HTTP 服务。"
+          "slug": "14",
+          "title": "递归——Racket 处理列表与树的方式",
+          "description": "递归不是 Racket 对循环的妥协，而是处理列表和树的自然方式——数据是递归的形状，处理就跟着是递归的形状。"
         },
         {
-          "slug": "02-routing-templates",
-          "title": "路由与模板",
-          "description": "实现 URL 路由分发，使用模板引擎渲染动态页面。"
+          "slug": "15",
+          "title": "柯里化——把多参数函数拆成一串小函数",
+          "description": "柯里化把一个多参数函数拆成一串单参数函数：喂一个参数，拿回一个还在等剩下参数的新函数。"
         },
         {
-          "slug": "03-database",
-          "title": "数据库操作",
-          "description": "连接 SQLite 和 PostgreSQL 数据库，执行查询与管理迁移。"
+          "slug": "16",
+          "title": "三种局部绑定——let 的并行、顺序与递归",
+          "description": "Racket 里给中间结果起个名字、限定它的可见范围，靠 `let` 家族。绑定相互独立用 `let`，有先后依赖用 `let*`，要引用自己用 `letrec`——区别全在求值时机。"
         },
         {
-          "slug": "04-restful-api",
-          "title": "RESTful API",
-          "description": "设计和实现符合 REST 规范的 JSON API，处理认证与错误。"
+          "slug": "17",
+          "title": "let-values——一次接收函数的多个返回值",
+          "description": "Racket 的函数能一次返回多个值，`let-values` 就是把它们一次性接住、绑到本地变量上的专门工具。"
         },
         {
-          "slug": "05-gui-basics",
-          "title": "GUI 基础与布局",
-          "description": "使用 racket/gui 创建跨平台桌面应用，掌握布局管理。"
+          "slug": "18",
+          "title": "case-lambda——按参数个数分派一个函数",
+          "description": "一个函数名，好几种调用形态——Racket 的 `case-lambda` 让你按参数个数分派不同的函数体，把“重载”这件事写进语法里。"
         },
         {
-          "slug": "06-gui-drawing-events",
-          "title": "GUI 绘图与事件",
-          "description": "深入画布绘图、自定义控件和事件驱动编程。"
+          "slug": "19",
+          "title": "模式匹配——用形状拆解数据",
+          "description": "`match` 让你按数据的\"形状\"做判断：一次匹配同时完成\"是不是这种结构\"和\"把里面的部件取出来\"两件事。它是 `cond` 的进化版——`cond` 只比值的相等，`match` 能比形状。"
         },
         {
-          "slug": "07-cli-tools",
-          "title": "CLI 工具开发",
-          "description": "使用 command-line 库构建专业的命令行工具。"
+          "slug": "20",
+          "title": "Lambda 演算——用函数表达一切计算",
+          "description": "λ 演算只有三种表达式——变量、函数抽象、函数应用——没有数字、没有 if、没有循环，却足以表达一切可计算的东西。"
         },
         {
-          "slug": "08-project",
-          "title": "项目实战",
-          "description": "综合运用所学知识，完成一个完整的真实项目。"
+          "slug": "21",
+          "title": "Y-Combinator——递归从哪里来",
+          "description": "一个连名字都没有的函数，怎么调用自己？Y-Combinator 不给它取名，而是给它一个不动点。"
+        },
+        {
+          "slug": "22",
+          "title": "写一个迷你解释器——递归遍历语法树",
+          "description": "一个算术解释器，本质就是一段递归遍历语法树的代码——复合节点递归进去，原子节点直接返回。写出来不到三十行，“求值”这件事就不再神秘。"
         }
       ]
     },
     {
       "id": "part-4",
       "number": 4,
-      "title": "语言设计",
-      "subtitle": "Language Design",
-      "description": "Racket 最独特的能力——用宏和 #lang 创造新的编程语言。从 DSL 理念到类型系统，掌握语言设计的核心思想。",
+      "title": "命令式与状态",
+      "subtitle": "State",
+      "description": "回答\"状态随时间怎么改变\"。异常、资源管理（Custodian）、状态机实战，最后用枢纽章把命令式、GUI、Web 串成一条线。",
       "chapters": [
         {
-          "slug": "01-language-design",
-          "title": "语言造语言",
-          "description": "理解 Racket 语言导向编程的核心理念。"
+          "slug": "23",
+          "title": "异常处理——把错误当控制流",
+          "description": "Racket 里 `raise` 把异常抛出去，`with-handlers` 用谓词精准接住——异常不只是报错，而是一套动态控制流，沿调用栈向外逃，直到有人愿意处理它。"
         },
         {
-          "slug": "02-macros-deep",
-          "title": "宏深入",
-          "description": "掌握宏的高级技巧：syntax-case、syntax-parse 和编译期计算。"
+          "slug": "24",
+          "title": "Custodian——Racket 资源的生命周期管家",
+          "description": "Racket 给每份资源配一个 custodian 当管家：管家一关，名下的端口、线程、子管家一并收摊；父管家一断，整条子链级联坍塌。"
         },
         {
-          "slug": "03-create-lang",
-          "title": "创建 #lang",
-          "description": "从零开始创建一个完整的 #lang 语言实现。"
+          "slug": "25",
+          "title": "红绿灯状态机——状态、转移与驱动",
+          "description": "红绿灯自己会变——红灯到时间变绿，绿灯到时间变黄，黄灯又回到红。这件再普通不过的事，拆开看就是三件事：状态、转移、驱动。把三件事各写一段代码，一个会自己切换的红绿灯就跑起来了。"
         },
         {
-          "slug": "04-type-systems",
-          "title": "类型系统",
-          "description": "探索 Typed Racket，理解渐进类型系统在 Racket 中的实现。"
+          "slug": "26",
+          "title": "从状态到世界——为什么会有命令式、GUI、Web",
+          "description": "写到这里，你已经能用 Racket 算账、处理列表、递归、管状态了。接下来要踏入一片新的地界——界面、对象、Web。在动手之前，先退一步看清：这些东西为什么存在？"
+        }
+      ]
+    },
+    {
+      "id": "part-5",
+      "number": 5,
+      "title": "对象与界面",
+      "subtitle": "Objects & GUI",
+      "description": "回答\"对象怎么组织、界面怎么搭\"。从 class 系统到第一个 GUI、控件、自定义绘制、声明式 GUI、后台任务。",
+      "chapters": [
+        {
+          "slug": "27",
+          "title": "面向对象——Racket 的 class 与对象",
+          "description": "Racket 用 `(class object% ...)` 定义类，`new` 造对象，`send` 调方法。它是一套独立于函数式的对象系统，专门收拾那些“带着状态、长期存活”的家伙。"
         },
         {
-          "slug": "05-dsl-practice",
-          "title": "实战：设计一门 DSL",
-          "description": "综合运用宏和语言创建技术，设计并实现一门领域特定语言。"
+          "slug": "28",
+          "title": "第一个 GUI——窗口、按钮与点击计数器",
+          "description": "写 GUI 程序，本质就是三件事——开一个窗口、往里放几个控件、给控件挂上回调。可程序跑过 `show` 之后为什么不退出？按钮被点一下，又是怎么“自动”跑起一段代码的？"
+        },
+        {
+          "slug": "29",
+          "title": "为什么 Racket GUI 写不出“现代界面”",
+          "description": "Racket GUI 把控件一个个钉进窗口，事件交给鼠标命中的那个控件就结束——不冒泡、不组合。所以\"一个任务项\"这种现代 UI 的最小单元，用 `racket/gui` 怎么拼都拧巴。这不是你不会写，是它刻意选了另一条路。"
+        },
+        {
+          "slug": "30",
+          "title": "8 种控件覆盖九成场景——按语义选 Racket GUI 控件",
+          "description": "Racket 的 `racket/gui` 里，九成的界面靠 8 个控件类就搭得起来。选哪个，不取决于它长什么样，取决于用户要对它做什么。"
+        },
+        {
+          "slug": "31",
+          "title": "Racket GUI 控件清单——内置库一次看全",
+          "description": "`racket/gui` 自带一套跨平台桌面控件——窗口、面板、按钮、输入框、选择器、滑块、画布、菜单，`#lang racket/gui` 一声明就能用。这一篇按类别把常用控件过一遍清单。"
+        },
+        {
+          "slug": "32",
+          "title": "自定义控件——子类化 canvas 自己画",
+          "description": "内置控件到头了，`racket/gui` 把真正的出口留给 `canvas%`：自己拿绘图上下文画，自己接鼠标键盘事件。子类化一个画布，到底要重写哪几个方法？"
+        },
+        {
+          "slug": "33",
+          "title": "gui-easy——声明式写 Racket GUI",
+          "description": "Racket 自带的 `racket/gui` 是命令式的：建控件、注册回调、手动读写状态。gui-easy 在外面套了一层函数式壳——状态放进 Observable，界面用 View 声明，刷新由库接管。"
+        },
+        {
+          "slug": "34",
+          "title": "GUI 不卡顿——把耗时任务挪到后台线程",
+          "description": "点按钮卡死窗口，多半不是 Racket 慢，而是耗时任务跑错了线程——挪到后台线程，再用 `queue-callback` 或 `channel` 把结果递回去，窗口就不卡了。"
+        }
+      ]
+    },
+    {
+      "id": "part-6",
+      "number": 6,
+      "title": "语言设计与计算模型",
+      "subtitle": "Language Design",
+      "description": "回答\"语言本身是怎么造出来的\"。宏、延续、generator、模块机制、惰性求值、DSL，最后亲手造一门 #lang 语言。",
+      "chapters": [
+        {
+          "slug": "35",
+          "title": "宏——让 Racket 语言自己长出来的方式",
+          "description": "Racket 的宏不是黑魔法——它是一段在编译期运行的程序，吃进语法树，吐出新的语法树。理解了“树替换”这一件事，你就能让语言长出它本来没有的构造。"
+        },
+        {
+          "slug": "36",
+          "title": "延续——Racket 里的时间旅行",
+          "description": "延续（continuation）是\"计算剩下要做的事\"。`call/cc` 把它打包成一个可调用的值，你可以存起来、传出去、以后再跳回去。`return` 只能回一层，延续能回到任意一个被保存的未来——但这力量该怎么用，才不会反噬？"
+        },
+        {
+          "slug": "37",
+          "title": "generator——用延续造出来的迭代器",
+          "description": "Racket 的 generator 是一个能按暂停键的函数：你每叫它一次，它吐一个值，下次从上次停下的地方接着跑。它不是新机制，底下是用延续切开的一次函数调用。"
+        },
+        {
+          "slug": "38",
+          "title": "语言声明与 require——Racket 的模块机制",
+          "description": "`#lang` 决定一个文件用什么语言写，`require` 在这门语言里加载别的模块——新手最常把这两件事搞混。分清它们，Racket 的模块机制就不再是一团乱麻。"
+        },
+        {
+          "slug": "39",
+          "title": "include——源码级引入，不是模块",
+          "description": "`include` 把另一个文件的代码原样塞进当前文件，像粘贴，不像导入。它和 `require` 长得像，却活在完全不同的层面——一个走模块系统，一个只是文本拼接。"
+        },
+        {
+          "slug": "40",
+          "title": "惰性求值——按需才算",
+          "description": "Racket 默认急着把每个参数都算好；可你想表示“所有自然数”、或跳过那段永远用不上的计算时，急就急不来了。`delay`/`force` 把计算推迟到催账那一刻，`lazy` 和流让你装下一整条无穷的链。"
+        },
+        {
+          "slug": "41",
+          "title": "造一个 DSL——Racket 让你设计自己的语言",
+          "description": "SQL、CSS、正则、HTML，都是为某个领域量身定做的小语言。如果有一天你想要的那个小语言没人替你做，你能不能自己造一个？Racket 说能——而且不用从零写解析器。"
+        },
+        {
+          "slug": "42",
+          "title": "写你自己的 lang——从内部 DSL 到一门独立语言",
+          "description": "上一章你用\"数据 + 解释函数 + 宏\"造了一门住在 Racket 里的内部 DSL。这一章再往前走一步：造一门有自己 `#lang`、连源代码长什么样都由你定的独立语言。"
+        }
+      ]
+    },
+    {
+      "id": "part-7",
+      "number": 7,
+      "title": "走向生产：工程化与实战",
+      "subtitle": "Production",
+      "description": "回答\"读完这本书，我能用 Racket 做什么\"。工具链、打包分发、数据库、Web 实战、工业级案例，对标 Core Python Applications Programming。",
+      "chapters": [
+        {
+          "slug": "43",
+          "title": "打印函数——给人看还是给程序读",
+          "description": "Racket 的打印不是\"一个函数加几个变体\"，而是三套语义：`display` 给人看，`write` 给程序读，`print` 留给 REPL。选错一套，日志里多几个引号是小事，把机器读的串当成人话贴给用户才是真出事。"
+        },
+        {
+          "slug": "44",
+          "title": "三种执行方式——同一份代码为何表现不同",
+          "description": "同一份 Racket 代码，DrRacket 里能跑、命令行里沉默、REPL 里报 undefined。代码没变，差异从哪来？"
+        },
+        {
+          "slug": "45",
+          "title": "REPL——边想边跑的开发方式",
+          "description": "Racket 让你把一个表达式敲进 REPL，按下回车就看到它的值。改一个函数，下一个调用就用新定义，不必重启、也不必重新编译——开发循环从\"改、编译、运行、看\"缩成\"敲一行、看一行\"。"
+        },
+        {
+          "slug": "46",
+          "title": "读懂 Racket 官方文档——Guide、Reference 与 contract",
+          "description": "Racket 文档读不懂，多半是入口选错了：Guide 讲思路，Reference 定规格，那一串方括号和箭头是 contract。你照着教程敲过几段代码，可曾真正打开过 Reference？"
+        },
+        {
+          "slug": "47",
+          "title": "Racket 工程工具 raco 全面指南：从包管理到应用发布",
+          "description": "`raco` 不只是装包的命令，它是 Racket 工程体系的控制中心——包管理、编译、测试、打包发布，全在这一个工具里。"
+        },
+        {
+          "slug": "48",
+          "title": "Racket 包开发实战：手把手教你发布符合官方标准的 Racket 包",
+          "description": "写一个 Racket 包并发布到官方仓库，没有想象中那么难——这篇带你从零走完整套流程，做出符合官方标准的包。"
+        },
+        {
+          "slug": "49",
+          "title": "Racket 开发者必看：如何将应用打包成 Windows macOS Linux 安装包",
+          "description": "`raco exe` 给你一个可执行文件，但普通用户要的是双击安装的体验——这篇拆解从可执行文件到 Windows、macOS、Linux 原生安装包的跨平台分发全流程。"
+        },
+        {
+          "slug": "50",
+          "title": "Racket 结构化编辑解决方案",
+          "description": "用 drracket-paredit 插件实现 S 表达式的结构化编辑。"
+        },
+        {
+          "slug": "51",
+          "title": "Racket 编码规范：提升 Lisp 代码的可维护性实践",
+          "description": "Lisp 的极简语法是双刃剑——没有规范，代码很快变成谁也读不懂的\"只写语言\"。这篇基于官方风格指南，提炼出可落地的编码规范。"
+        },
+        {
+          "slug": "52",
+          "title": "数据库是什么——从 Excel 到 SQL",
+          "description": "数据库不是什么神秘的服务器技术。它的本质是一张能被快速查询的表——你用过 Excel，就理解了一大半。这一章讲清数据库和 SQL 到底是什么，再带你用 Racket 把它跑起来。"
+        },
+        {
+          "slug": "53",
+          "title": "从零开始用 Racket 写一个 Web Server",
+          "description": "Web 开发听起来是一堆陌生名词，但剥到本质就是一件事：一次请求，一次响应——和函数调用没有区别。这篇用 Racket 把这件事赤裸裸摆给你看。"
+        },
+        {
+          "slug": "54",
+          "title": "深入理解 Racket Web Server 的工作方式",
+          "description": "写出第一个能跑的 Web Server 后，你会觉得不过如此——但需求稍一增加，问题就来了：连接怎么管、状态怎么存、并发怎么扛。这篇拆解 Web Server 背后真正在发生什么。"
+        },
+        {
+          "slug": "55",
+          "title": "用 Koyo 构建 Web 应用：Racket 爱好者的现代开发工具箱",
+          "description": "想用 Racket 写个正经的 Web 应用，光靠内置的 web-server 会觉得缺这缺那。Koyo 给你补齐了现代 Web 应用所需的一整套工具，而且想用什么用什么，不强制绑定。"
+        },
+        {
+          "slug": "56",
+          "title": "如何让 Racket Web 程序稳定上线Nginx 反向代理部署指南",
+          "description": "让你写好的 Racket Web 程序，能够 **稳定、规范、可维护** 地跑在服务器上，并通过 **Nginx** 对外提供服务。"
+        },
+        {
+          "slug": "57",
+          "title": "还在用字符串写 HTMLRacket xexpr 让你像写代码一样构建页面",
+          "description": "在多数语言里，HTML 是一段要拼接、要转义、要忍受的字符串。在 Racket 里，HTML 是一种数据结构——你像写代码一样构建它，不用碰字符串。"
+        },
+        {
+          "slug": "58",
+          "title": "还在为 Racket 与 C 交互发愁一文搞定 FFI 调用、内存管理与常见陷阱",
+          "description": "Racket 不被困在自己的生态里——它的 FFI 让你直接调用 C 的共享库，把两门语言的能力拼在一起。这篇讲清调用、内存管理和最常见的坑。"
+        },
+        {
+          "slug": "59",
+          "title": "一个 Racket 程序员的工具箱",
+          "description": "你已经走过了从\"编程是什么\"到\"造一门语言\"的完整旅程。这最后一章不教你新东西——它把前面所有的能力收拢成一张地图：用 Racket 从零做一个真实产品，你需要哪些工具，它们怎么配合。"
+        },
+        {
+          "slug": "60",
+          "title": "如何构建和运行 ActivityLog2",
+          "description": "一个真实的、有实际功能的开源 Racket 桌面应用长什么样？ActivityLog2 是最好的答案——这篇带你把它从源码构建到跑起来。"
+        }
+      ]
+    },
+    {
+      "id": "appendix",
+      "number": 8,
+      "title": "附录",
+      "subtitle": "Appendix",
+      "description": "Noise 嵌入式运行时精读（Racket 能打工业级的核心证据链）、Racket 编译完全指南、Racket 语言实现剖析。",
+      "chapters": [
+        {
+          "slug": "1",
+          "title": "Noise 精读（一）：三层架构与异步模型",
+          "description": ""
+        },
+        {
+          "slug": "2",
+          "title": "Noise 精读（二）：Racket 嵌入 Swift 应用的底层机制",
+          "description": ""
+        },
+        {
+          "slug": "3",
+          "title": "Noise 精读（三）：XCFramework 的作用 - 多平台二进制框架分发",
+          "description": ""
+        },
+        {
+          "slug": "4",
+          "title": "Noise 精读（四）：如何为 Noise 编译 Racket - 多平台构建指南",
+          "description": ""
+        },
+        {
+          "slug": "5",
+          "title": "Noise 精读（六）：编译背后的 ctool - Racket 代码的 C 工具链依赖",
+          "description": ""
+        },
+        {
+          "slug": "6",
+          "title": "Noise 精读（七）：Racket DSL 的设计与实现 - 宏系统与代码生成",
+          "description": ""
+        },
+        {
+          "slug": "7",
+          "title": "Noise 精读（八）：DSL 快速入门指南 - 定义记录、枚举与 RPC",
+          "description": ""
+        },
+        {
+          "slug": "8",
+          "title": "Noise 精读（九）：使用 Noise 库进行跨语言开发完整指南",
+          "description": ""
+        },
+        {
+          "slug": "9",
+          "title": "Noise 精读（十）：实战：从零构建 Swift + Racket 计算器应用",
+          "description": ""
+        },
+        {
+          "slug": "10",
+          "title": "Racket 编译完全指南",
+          "description": "**说明**：`Makefile` 实际上是一个封装层，所有构建操作都通过 main.zuo（Zuo 构建系统）执行。你可以直接使用 `zuo .` 命令代替 `make` 来调用相同的构建目标。"
+        },
+        {
+          "slug": "11",
+          "title": "Racket 语言实现剖析",
+          "description": "这门语言的 \" 本体 \" 是什么？"
         }
       ]
     }
   ],
   "paths": [
-    { "part": "part-1", "slug": "01-introduction" },
-    { "part": "part-1", "slug": "02-sexp-syntax" },
-    { "part": "part-1", "slug": "03-data-types" },
-    { "part": "part-1", "slug": "04-functions" },
-    { "part": "part-1", "slug": "05-control-flow" },
-    { "part": "part-1", "slug": "06-lists-recursion" },
-    { "part": "part-1", "slug": "07-structs-vectors" },
-    { "part": "part-1", "slug": "08-modules" },
-    { "part": "part-2", "slug": "01-pattern-matching" },
-    { "part": "part-2", "slug": "02-macros" },
-    { "part": "part-2", "slug": "03-exceptions-contracts" },
-    { "part": "part-2", "slug": "04-concurrency" },
-    { "part": "part-2", "slug": "05-regex-parsing" },
-    { "part": "part-3", "slug": "01-web-server" },
-    { "part": "part-3", "slug": "02-routing-templates" },
-    { "part": "part-3", "slug": "03-database" },
-    { "part": "part-3", "slug": "04-restful-api" },
-    { "part": "part-3", "slug": "05-gui-basics" },
-    { "part": "part-3", "slug": "06-gui-drawing-events" },
-    { "part": "part-3", "slug": "07-cli-tools" },
-    { "part": "part-3", "slug": "08-project" },
-    { "part": "part-4", "slug": "01-language-design" },
-    { "part": "part-4", "slug": "02-macros-deep" },
-    { "part": "part-4", "slug": "03-create-lang" },
-    { "part": "part-4", "slug": "04-type-systems" },
-    { "part": "part-4", "slug": "05-dsl-practice" }
+    {
+      "part": "part-1",
+      "slug": "1"
+    },
+    {
+      "part": "part-1",
+      "slug": "2"
+    },
+    {
+      "part": "part-1",
+      "slug": "3"
+    },
+    {
+      "part": "part-1",
+      "slug": "4"
+    },
+    {
+      "part": "part-1",
+      "slug": "5"
+    },
+    {
+      "part": "part-2",
+      "slug": "10"
+    },
+    {
+      "part": "part-2",
+      "slug": "11"
+    },
+    {
+      "part": "part-2",
+      "slug": "12"
+    },
+    {
+      "part": "part-2",
+      "slug": "13"
+    },
+    {
+      "part": "part-2",
+      "slug": "6"
+    },
+    {
+      "part": "part-2",
+      "slug": "7"
+    },
+    {
+      "part": "part-2",
+      "slug": "8"
+    },
+    {
+      "part": "part-2",
+      "slug": "9"
+    },
+    {
+      "part": "part-3",
+      "slug": "14"
+    },
+    {
+      "part": "part-3",
+      "slug": "15"
+    },
+    {
+      "part": "part-3",
+      "slug": "16"
+    },
+    {
+      "part": "part-3",
+      "slug": "17"
+    },
+    {
+      "part": "part-3",
+      "slug": "18"
+    },
+    {
+      "part": "part-3",
+      "slug": "19"
+    },
+    {
+      "part": "part-3",
+      "slug": "20"
+    },
+    {
+      "part": "part-3",
+      "slug": "21"
+    },
+    {
+      "part": "part-3",
+      "slug": "22"
+    },
+    {
+      "part": "part-4",
+      "slug": "23"
+    },
+    {
+      "part": "part-4",
+      "slug": "24"
+    },
+    {
+      "part": "part-4",
+      "slug": "25"
+    },
+    {
+      "part": "part-4",
+      "slug": "26"
+    },
+    {
+      "part": "part-5",
+      "slug": "27"
+    },
+    {
+      "part": "part-5",
+      "slug": "28"
+    },
+    {
+      "part": "part-5",
+      "slug": "29"
+    },
+    {
+      "part": "part-5",
+      "slug": "30"
+    },
+    {
+      "part": "part-5",
+      "slug": "31"
+    },
+    {
+      "part": "part-5",
+      "slug": "32"
+    },
+    {
+      "part": "part-5",
+      "slug": "33"
+    },
+    {
+      "part": "part-5",
+      "slug": "34"
+    },
+    {
+      "part": "part-6",
+      "slug": "35"
+    },
+    {
+      "part": "part-6",
+      "slug": "36"
+    },
+    {
+      "part": "part-6",
+      "slug": "37"
+    },
+    {
+      "part": "part-6",
+      "slug": "38"
+    },
+    {
+      "part": "part-6",
+      "slug": "39"
+    },
+    {
+      "part": "part-6",
+      "slug": "40"
+    },
+    {
+      "part": "part-6",
+      "slug": "41"
+    },
+    {
+      "part": "part-6",
+      "slug": "42"
+    },
+    {
+      "part": "part-7",
+      "slug": "43"
+    },
+    {
+      "part": "part-7",
+      "slug": "44"
+    },
+    {
+      "part": "part-7",
+      "slug": "45"
+    },
+    {
+      "part": "part-7",
+      "slug": "46"
+    },
+    {
+      "part": "part-7",
+      "slug": "47"
+    },
+    {
+      "part": "part-7",
+      "slug": "48"
+    },
+    {
+      "part": "part-7",
+      "slug": "49"
+    },
+    {
+      "part": "part-7",
+      "slug": "50"
+    },
+    {
+      "part": "part-7",
+      "slug": "51"
+    },
+    {
+      "part": "part-7",
+      "slug": "52"
+    },
+    {
+      "part": "part-7",
+      "slug": "53"
+    },
+    {
+      "part": "part-7",
+      "slug": "54"
+    },
+    {
+      "part": "part-7",
+      "slug": "55"
+    },
+    {
+      "part": "part-7",
+      "slug": "56"
+    },
+    {
+      "part": "part-7",
+      "slug": "57"
+    },
+    {
+      "part": "part-7",
+      "slug": "58"
+    },
+    {
+      "part": "part-7",
+      "slug": "59"
+    },
+    {
+      "part": "part-7",
+      "slug": "60"
+    },
+    {
+      "part": "appendix",
+      "slug": "1"
+    },
+    {
+      "part": "appendix",
+      "slug": "10"
+    },
+    {
+      "part": "appendix",
+      "slug": "11"
+    },
+    {
+      "part": "appendix",
+      "slug": "2"
+    },
+    {
+      "part": "appendix",
+      "slug": "3"
+    },
+    {
+      "part": "appendix",
+      "slug": "4"
+    },
+    {
+      "part": "appendix",
+      "slug": "5"
+    },
+    {
+      "part": "appendix",
+      "slug": "6"
+    },
+    {
+      "part": "appendix",
+      "slug": "7"
+    },
+    {
+      "part": "appendix",
+      "slug": "8"
+    },
+    {
+      "part": "appendix",
+      "slug": "9"
+    }
   ]
 }

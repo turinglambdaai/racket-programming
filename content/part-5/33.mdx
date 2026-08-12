@@ -1,0 +1,175 @@
+# gui-easy——声明式写 Racket GUI
+
+> Racket 自带的 `racket/gui` 是命令式的：建控件、注册回调、手动读写状态。gui-easy 在外面套了一层函数式壳——状态放进 Observable，界面用 View 声明，刷新由库接管。
+
+写过 `racket/gui` 的人多半有过这种体验：要把文本框的值同步到标签上，得在回调里 `send` 这个、`send` 那个；状态一多，回调之间互相牵扯，界面刷新全靠手。这不是 Racket 特有的毛病，而是所有命令式 GUI 的通病——状态散落在控件里，控件又彼此引用。
+
+能不能只描述“界面该长什么样”，剩下的事交给库？gui-easy 的回答是：把状态从控件里拎出来，放进 Observable；控件声明自己依赖哪个 Observable，连线交给库。
+
+**gui-easy 的核心就一句话：你只描述“界面该是什么样”，刷新交给库。**
+
+## 命令式 GUI 的累，累在哪
+
+先用原生 `racket/gui` 想象一个计数器，感受一下“累”。核心逻辑只有三件事：一个按钮减一、一个标签显示当前值、一个按钮加一。但在命令式写法里，你得先建控件，再在两个按钮的回调里手动读出标签、改文字、塞回去——状态和控件绑死，每改一处状态都要记得刷新对应的控件。
+
+gui-easy 把“状态”和“控件”拆开：状态放在 Observable 里，控件只声明“我显示这个 Observable 的值”。状态一变，依赖它的控件自动更新。代码的着眼点从“怎么刷新”变成了“状态现在是什么”。
+
+## Observable：状态自己会通知
+
+Observable 是一个装值的盒子，值变了会主动通知所有盯着它的人。装一个盒子用 `obs`，或操作符模块里的 `@`——两者等价：
+
+```text
+raco pkg install gui-easy
+```
+
+```racket
+#lang racket
+(require racket/gui/easy
+ racket/gui/easy/operator)
+
+(define @count (@ 0)) ; 持有 0 的盒子，等价于 (obs 0)
+
+(obs-peek @count) ; 读当前值，不改
+(obs-set! @count 42) ; 直接赋值
+(@count . <~ . add1) ; 用函数更新，等价于 (obs-update! @count add1)
+```
+
+`@` 同时是 Racket 标识符的合法字符，所以约定俗成用 `@count`、`@input` 给 Observable 命名——一眼看出这是个盒子。`<~` 是 `obs-update!` 的别名，`~>` 是 `obs-map` 的别名，两者都来自 `racket/gui/easy/operator`。
+
+Observable 还能派生——从一个盒子算出另一个盒子，源头变了，派生盒自动跟着变：
+
+```racket
+(define @double (@count . ~> . (λ (n) (* n 2))))
+(obs-peek @double) ; @count 变它就变
+```
+
+**派生 Observable 只能读，不能写。** 对它调用 `<~` 或 `obs-update!` 会直接抛契约错误——它的值由上游决定，没有“自己赋值”这回事。
+
+## View：声明界面，而非组装控件
+
+View 是控件的声明式描述——一棵 S 表达式，说清“这里放一个水平面板，面板里一个按钮、一段文字”。它本身还不是控件，交给 `render` 后才被实例化成真正的窗口：
+
+```racket
+(render
+ (window
+ #:title "Hello"
+ (text "Hello, World!")))
+```
+
+`window` 的标题用 `#:title` 关键字传（默认 `"Untitled"`），子控件作为剩余参数顺次列出。`render` 是入口，接收一个 `window` 或 `dialog`，把它变成原生 GUI。
+
+gui-easy 里几乎所有控件参数都带 `maybe-obs/c` 契约——这个位置既能传普通值，也能传 Observable。传 Observable，控件就跟着它动态变化：
+
+```racket
+(text "固定文字") ; 静态标签
+(text (@count . ~> . number->string)) ; 动态标签，随 @count 变
+```
+
+**带 `maybe-obs/c` 的参数，传值或传盒子都行——这是声明式能成立的关键。** 布局容器 `hpanel`（水平）、`vpanel`（垂直）、`group`（带标题的竖直面板）同样接受 `#:alignment`、`#:spacing`、`#:stretch` 等关键字，而且这些关键字本身也能传 Observable。
+
+## 一个计数器，看清整套循环
+
+把 Observable 和 View 拼起来，就是一个完整的计数器。这是 gui-easy 官方文档的开篇示例：
+
+```racket
+#lang racket
+(require racket/gui/easy
+ racket/gui/easy/operator)
+
+(define @count (@ 0))
+
+(render
+ (window
+ #:title "Counter"
+ (hpanel
+ (button "-" (λ () (@count . <~ . sub1)))
+ (text (@count . ~> . number->string))
+ (button "+" (λ () (@count . <~ . add1))))))
+```
+
+读这段代码的方式和读 HTML 类似：一个窗口里水平摆了三样东西。中间的 `text` 依赖 `@count` 派生出的字符串 Observable——`@count` 一变，它就自动重算、自动刷新。两个按钮的回调是零参数 thunk，点一下就把 `add1` 或 `sub1` 喂进 `@count`。
+
+**状态变了，界面自己跟着变——你从不手写刷新。** 这就是 gui-easy 的全部循环：状态装盒、界面声明、回调只改状态。
+
+## 控件回调：谁的 lambda 吃几个参数
+
+按钮的回调是零参数 thunk，但这不代表所有控件都这样——恰恰相反，每个控件的回调签名不一样，这是从 `racket/gui` 名字迁移过来时最容易踩的坑。
+
+| 控件 | 回调签名 | 收到的参数 |
+|---|---|---|
+| `button` | `(-> any)` | 无 |
+| `checkbox` | `(-> boolean? any)` | 新的勾选状态 |
+| `choice` | `(-> (or/c #f any/c) any)` | 新选中的项，无则 `#f` |
+| `radios` | `(-> (or/c #f any/c) any)` | 新选中的项，无则 `#f` |
+| `slider` | `(-> integer? any)` | 新的整数值 |
+| `input` | `(-> symbol? string? any)` | 事件类型与当前文本 |
+
+最反直觉的是 `checkbox`：它的第一个位置参数是回调，标签反而要走 `#:label` 关键字——和 `button` 正好反过来。
+
+```racket
+(define @agree (@ #f))
+
+(checkbox (λ (checked?) (:= @agree checked?))
+ #:label "同意条款"
+ #:checked? @agree)
+```
+
+`choice` 和 `radios` 都是选项列表在前、回调在后，当前选中项用 `#:selection` 传 Observable。两者区别在于 `choice` 的选项可变（接受 Observable），`radios` 的选项固定。`slider` 的范围走 `#:min-value` 和 `#:max-value` 关键字，不是位置参数：
+
+```racket
+(define @vol (@ 50))
+
+(slider @vol
+ (λ (n) (:= @vol n))
+ #:min-value 0
+ #:max-value 100)
+```
+
+`input` 第一个参数是当前值（字符串或字符串的 Observable）。传 Observable 时，输入框和它双向同步——你在框里打字，Observable 跟着变；Observable 被别处改了，框也跟着变。回调另外收到事件类型（`'input`、`'return`、`'has-focus`、`'lost-focus`）和当前文本，用于挂副作用。
+
+**每个控件的回调签名都不一样，这是 gui-easy 最容易踩坑的地方。** 写之前查一眼表格，能省掉大半调试时间。
+
+## 列表与派生：状态组合出来的界面
+
+界面里常有“一组东西”——待办列表、动态表单。`list-view` 接收一个列表 Observable，给每个元素生成一个子 View，并把每个元素包成一个派生 Observable 递给你：
+
+```racket
+(define @items (@ '("苹果" "香蕉")))
+
+(list-view @items
+ #:key values
+ (λ (key @item)
+ (hpanel
+ (text @item)
+ (button "删除"
+ (λ () (@items . <~ . (λ (xs) (remove key xs))))))))
+```
+
+`#:key` 给每个元素算一个唯一标识，列表增删时 gui-easy 靠它复用对应控件，不至于全部推倒重建。`@item` 是只读的派生 Observable，改它没用——要动数据得回到源头 `@items`。
+
+多个 Observable 还能合并。`obs-combine` 把几个盒子按一个函数归约成一个新盒子，任何一个上游变了，下游都重算：
+
+```racket
+(define @a (@ 10))
+(define @b (@ 20))
+(define @sum (obs-combine + @a @b))
+
+(obs-peek @sum) ; 30
+```
+
+这套机制让你像写电子表格一样组织界面：原始状态是几个格子，显示内容是从格子里算出来的公式。需要按状态切换整块界面时，还有 `if-view`、`case-view`、`cond-view` 这样的条件视图。
+
+## 什么时候值得上 gui-easy
+
+gui-easy 不是 `racket/gui` 的替代品，而是它外面的一层壳——底层控件、事件循环、绘图上下文全都在。它的价值是把“状态同步到控件”这件易错的事交给库，让中小型界面的心智负担骤降。
+
+| | `racket/gui` | gui-easy |
+|---|---|---|
+| 范式 | 命令式、面向对象 | 声明式、函数式 |
+| 状态 | 散落在控件 | 集中在 Observable |
+| 刷新 | 手动 `send` | 自动响应 |
+| 逃生舱 | 无 | `#:mixin` 透传原生控件 |
+
+但当界面复杂到需要自定义绘图、精细焦点管理、或大量第三方 snip 时，命令式的 `racket/gui` 反而更直接——每个 View 都提供 `#:mixin` 关键字，随时能“下沉”回原生控件。声明式不是银弹，它只是在“状态驱动”这一层给了你更顺手的工具。
+
+> 把状态看成 Observable，把界面看成 View 的声明，GUI 编程就从“组装控件”变成了“描述关系”——这正是函数式思维在界面里的落地。

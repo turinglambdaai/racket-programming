@@ -1,0 +1,214 @@
+# 异常处理——把错误当控制流
+
+> Racket 里 `raise` 把异常抛出去，`with-handlers` 用谓词精准接住——异常不只是报错，而是一套动态控制流，沿调用栈向外逃，直到有人愿意处理它。
+
+你写过调用链很深的程序。某个底层函数发现文件不存在、除数为零、JSON 解析到一半烂掉了——这一刻它该怎么办？返回 `#f`？返回一个带标记的列表？还是打印一行错误，然后带着半坏的状态继续往下跑？
+
+这些办法都能让程序动起来，但每一个都在把麻烦甩给上层：上层得记得检查返回值、得猜 `#f` 是“文件不存在”还是“内容为空”、得在每一层重复加判断。Racket 给了一个更干净的方案——异常。
+
+## 异常是一种约定
+
+拿读文件这件小事做例子。用 `file->string` 把一个文件读成字符串：
+
+```racket
+(require racket/file)
+
+(file->string "not-exist.txt")
+; 文件不存在，这里会抛出 exn:fail:filesystem 异常
+```
+
+如果这个函数是你自己设计的，“文件不存在”该怎么报告？几种笨办法都难令人满意。返回 `#f`，可 `#f` 既可能是“文件不存在”，也可能是“文件存在但内容为空”，上层分不清；返回一个带标记的列表，每一层调用都得拆开看一眼；直接打印一行错误，程序却带着半坏的状态继续跑。
+
+异常机制立了一条清晰的约定。
+
+**底层遇到处理不了的情况就停下，把问题抛出来；接不接、怎么接，由调用方决定。**
+
+底层只负责如实报告，上层负责拿主意，职责一刀切开。
+
+## raise：抛什么都行
+
+`raise` 是最底层的抛出原语，它接受任意值：
+
+```racket
+(raise "something went wrong") ; 抛一个字符串
+(raise 42) ; 抛一个数字
+(raise '(error parsing line 17)) ; 抛一个列表
+```
+
+技术上 Racket 允许你抛任何值。但抛一个裸字符串有个麻烦：接的人没法靠类型区分它到底是哪种错误。所以约定上，异常通常是一个 `exn` 结构体，带两个字段——`message`（错误信息）和 `continuation-marks`（抛出点的调用栈标记）：
+
+```racket
+(raise (make-exn "bad input" (current-continuation-marks)))
+```
+
+`current-continuation-marks` 记录“异常是从哪儿抛出来的”，调试时还原现场就靠它。但手动构造 `exn` 很啰嗦，几乎没人这么写。实际写法是用 `error`——它自动帮你造好一个 `exn:fail`（`exn` 的子类型，专指“程序运行错误”）：
+
+```racket
+(error "division by zero")
+```
+
+这一节先记住两件事：`raise` 是原语，能抛任何东西；`error` 是糖，抛的是带类型的 `exn:fail`。至于这个类型区分为什么重要，等讲完接异常就清楚了。
+
+## with-handlers：用谓词精准接住
+
+光会抛不行，还得能接。`with-handlers` 的长相：
+
+```racket
+(with-handlers ([predicate handler])
+ expression)
+```
+
+它先装好 handler，再跑 `expression`。如果期间抛出异常，就按顺序找出第一个谓词对其返回真值的 handler，把异常喂给它；handler 的返回值，就是整个 `with-handlers` 的结果。
+
+接住一个除零错误：
+
+```racket
+(with-handlers ([exn:fail? (λ (e)
+ (displayln "caught!")
+ 0)])
+ (/ 10 0))
+; 打印：caught!
+; 返回：0
+```
+
+`exn:fail?` 是个谓词，问的是“这是不是一个 `exn:fail`？”。关键在于，handler 靠谓词匹配，不是靠别的语言里 `try/catch` 那种类型捕获。这意味着你可以同时挂好几个 handler，按异常类型分别接：
+
+```racket
+(with-handlers ([exn:fail:filesystem? (λ (e) "文件出错")]
+ [exn:fail:contract? (λ (e) "参数不合规")])
+ (file->string "no-such-file"))
+; => "文件出错"
+```
+
+谓词写在前面，第一个匹配上的就处理，后面的不再试。所以把更具体的类型放前面，更通用的 `exn:fail?` 放后面兜底。
+
+## with-handlers*：handler 能拿到抛出点的续延
+
+`with-handlers` 还有个带星号的兄弟 `with-handlers*`，长得一模一样，区别藏在 handler 的调用位置里。
+
+普通的 `with-handlers`：handler 跑在 `with-handlers` 这个表达式的续延里。换句话说，handler 一返回，值就交给 `with-handlers` 外面的代码，它没法回到抛出异常的那个点。
+
+`with-handlers*` 不一样：handler 跑在 `raise` 那一刻的续延里，尾位置紧贴着 `raise`。这意味着 handler 手里攥着抛出点的续延——它能在内部用 `call/cc` 把这个续延抓出来、重新抛一个异常、或者做更复杂的非局部跳转，而不只是返回一个值。
+
+日常你只需要 `with-handlers`。
+
+**等你发现 handler 里想干的事超出“返回一个值”——比如要抓续延、重抛、或做非局部跳转——才换成 `with-handlers*`。**
+
+还有一个附带差别：`with-handlers` 在调 handler 时会临时关掉中断（break，比如 Ctrl+C），`with-handlers*` 不会。所以用 `with-handlers*` 时，handler 跑的过程中还能被 Ctrl+C 打断。
+
+## 异常沿着调用栈向外逃
+
+异常被抛出后，会沿着调用链一路向外逃，穿过任何不接它的函数，直到撞上一个愿意处理它的 handler。看这个三层调用：
+
+```racket
+(define (a) (b))
+(define (b) (c))
+(define (c) (error "oops"))
+
+(with-handlers ([exn:fail? (λ (_) 'handled)])
+ (a))
+; => 'handled
+```
+
+`error` 在最里层的 `c` 抛出，`b` 和 `a` 都没装 handler，异常一路穿过它们，最后被最外层的 `with-handlers` 接住。中间这几层完全不需要知道异常发生过。
+
+**这正是异常比“层层检查返回值”省事的地方：只有知道怎么处理的层，才需要管它。**
+
+注意这件事的性质：handler 接的是运行时调用链上的异常，不是源代码里词法上包着它的异常。换句话说，异常机制是动态绑定的控制流，和函数的词法作用域不是一回事——这跟后面要讲的 continuation 是一路货色。
+
+## 自定义异常：给错误一个专属类型
+
+内置的 `exn:fail` 只能告诉你“出错了”。如果你想把“JSON 解析错”和“网络超时”分开处理，就得给异常一个更细的类型。Racket 的异常是结构体，可以继承 `exn` 自己造：
+
+```racket
+(require racket/string)
+
+; 定义 JSON 解析异常，比 exn 多一个 value 字段
+(struct exn:json exn (value)
+ #:transparent)
+
+(define (parse-json s)
+ (if (string-prefix? "{" s)
+ 'ok
+ (raise (exn:json "bad json" (current-continuation-marks) s))))
+
+(parse-json "???")
+; => 抛出 exn:json
+```
+
+`struct` 的第二个位置写 `exn`，表示继承自 `exn`，所以 `exn:json` 自动带上了 `message` 和 `continuation-marks`，外加一个自定义的 `value` 字段存出错时的原始输入。`#:transparent` 让结构体打印时能看到内容，方便调试。
+
+接它的时候，谓词用 `exn:json?`，还能把附加字段取出来：
+
+```racket
+(with-handlers ([exn:json? (λ (e)
+ (printf "JSON error: ~a\n" (exn:json-value e))
+ 'failed)])
+ (parse-json "???"))
+; 打印：JSON error: ???
+; 返回：'failed
+```
+
+顺带一提，`string-prefix?` 来自 `racket/string`，用之前记得 `require`。
+
+## error 家族：把意图写进类型
+
+Racket 准备了一组抛错函数，差别就在它们抛出的异常类型不同——类型本身就表达了“这是什么性质的错误”。
+
+`error` 抛 `exn:fail`，最通用的运行错误，能带格式化字符串和函数名：
+
+```racket
+(error 'add-two "expects number, got: ~a" x)
+; 抛出 exn:fail，消息形如 add-two: expects number, got: ...
+```
+
+`raise-argument-error` 抛 `exn:fail:contract`，专指“函数参数不符合契约”。它把“哪个函数、期望什么、实际收到什么”规规矩矩打包好，最适合做参数校验：
+
+```racket
+(define (add2 x)
+ (unless (number? x)
+ (raise-argument-error 'add2 "number?" x))
+ (+ x 2))
+```
+
+`raise-user-error` 抛 `exn:fail:user`，给最终用户看的错误——比如配置文件少了一项、命令行参数不对。它和 `error` 的区别不是有没有栈追踪。
+
+**真正的区别是类型不同：`exn:fail:user` 告诉工具和日志系统“这条错误是给终端用户看的，别当成程序员的 bug”。**
+
+写库的公共 API，用 `raise-user-error` 更贴切。
+
+这一组函数都是 `raise` 的糖——底层都是造一个特定子类型的 `exn` 再 `raise` 出去。选哪个，取决于你想让接的人靠类型读出什么意图。
+
+## 新手会踩的坑
+
+最常见的翻车，是谓词没匹配上。下面这个 handler 只认 contract 错误，可 `error` 抛的是普通的 `exn:fail`，谓词返回 `#f`，异常原封不动漏出去：
+
+```racket
+(with-handlers ([exn:fail:contract? (λ (_) "caught")])
+ (error "boom"))
+; => 异常未被捕获，继续向外逃
+```
+
+想兜住所有运行错误，把谓词放宽到 `exn:fail?` 就行——handler 靠谓词挑异常，谓词写错就等于没接。
+
+第二个坑，是以为 `raise` 只能抛字符串。它什么值都能抛，但约定上要抛带类型的 `exn`（或直接用 `error`），上层才好靠谓词区分。
+
+第三个坑，是忘了异常会打断控制流。抛出点之后的代码不会执行，除非有 handler 接住并选择续上：
+
+```racket
+(error "boom")
+(displayln "after")
+; => "after" 永远不会打印
+```
+
+最后，别把 Racket 的 handler 想成别的语言里的 try/catch。它是动态绑定的控制结构，能沿调用栈穿越好几层，比词法的 try/catch 灵活得多——这正是它强大的地方，也是新手容易踩空的地方。
+
+## 异常背后是 escape continuation
+
+回头看异常的几个特征：抛出后沿调用栈向外逃、穿过不接它的函数、被运行时安装的 handler 接住、handler 一返回控制流就跳走。这套行为和“函数正常返回”完全不是一回事，倒很像某种受控的跳转。
+
+事实上，Racket 的异常就是建立在 escape continuation 上的。`raise` 调用当前安装的 handler，同时丢弃从抛出点到 handler 之间的所有续延，相当于一次“只进不退”的跳转。它不能像完整的 `call/cc` 那样随便回到程序里的任意一点，只能在 handler 处着陆。
+
+这是一个伏笔。等你学到 continuation 和 `call/cc`，你会发现异常不过是这套更通用的跳转机制里、一个被收得紧紧的特例。
+
+**理解了异常，你已经摸到了 Racket 控制流的门边。**

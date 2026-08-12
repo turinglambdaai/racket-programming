@@ -1,0 +1,294 @@
+# 如何让 Racket Web 程序稳定上线Nginx 反向代理部署指南
+
+本文面向 **Racket Web 开发者**，目标很明确：
+
+> 让你写好的 Racket Web 程序，能够 **稳定、规范、可维护** 地跑在服务器上，并通过 **Nginx** 对外提供服务。
+
+不假设你熟悉前端或运维知识，只假设你已经：
+
+- 能用 Racket 写一个 Web 程序（`web-server` 或类似框架）
+- 能在服务器上运行 Racket 程序
+
+## 一、为什么需要 Nginx
+
+很多 Racket 新手会直接这样做：
+
+```bash
+racket main.rkt
+```
+
+然后让程序监听 `0.0.0.0:8000`，再直接通过 IP 访问。
+
+这 **可以跑**，但并不适合正式部署，原因包括：
+
+- Racket Web Server 不擅长处理大量并发连接
+- HTTPS、证书管理很麻烦
+- 静态资源（CSS / JS / 图片）效率低
+- 端口暴露、进程管理不规范
+
+**Nginx 的角色是：**
+
+- 作为对外的 Web 入口（80 / 443）
+- 处理 HTTPS、反向代理、静态资源
+- 把请求转发给后端的 Racket 程序
+
+经典结构如下：
+
+```text
+[ Browser ]
+ |
+ v
+[ Nginx ] :80 / :443
+ |
+ v
+[ Racket Web ] :127.0.0.1:8000
+```
+
+## 二、一个最小可部署的 Racket Web 程序
+
+我们先准备一个 **最简单但规范** 的 Racket Web 服务。
+
+**1. 示例代码**
+
+```racket
+#lang racket
+
+(require web-server/servlet
+ web-server/servlet-env)
+
+(define (start req)
+ (response/xexpr
+ `(html
+ (head (title "Racket + Nginx"))
+ (body (h1 "Hello from Racket")))))
+
+(serve/servlet start
+ #:port 8000
+ #:listen-ip "127.0.0.1"
+ #:servlet-path "/"
+ #:launch-browser? #f)
+```
+
+**几个关键点：**
+
+- `127.0.0.1`：只允许本机访问（安全）
+- 固定端口：便于 Nginx 转发
+- 不自动打开浏览器
+
+运行后，本机访问：
+
+```text
+http://127.0.0.1:8000
+```
+
+## 三、Nginx 的核心概念（够用版）
+
+在部署 Racket Web 时，你只需要理解三件事：
+
+### 1. 反向代理（reverse proxy）
+
+Nginx 接收请求 → 转发给 Racket → 再把响应返回给客户端。
+
+### 2. upstream（可选）
+
+当你有多个后端实例时使用，新手可以先不用。
+
+### 3. location
+
+用来匹配 URL 路径，并指定处理方式。
+
+## 四、最小 Nginx 配置（HTTP）
+
+假设你的 Racket 程序运行在：
+
+```text
+127.0.0.1:8000
+```
+
+### 1. 创建站点配置
+
+```bash
+sudo nano /etc/nginx/sites-available/racket-app
+```
+
+### 2. 基础配置内容
+
+```nginx
+server {
+ listen 80;
+ server_name example.com;
+
+ location / {
+ proxy_pass http://127.0.0.1:8000;
+
+ proxy_set_header Host $host;
+ proxy_set_header X-Real-IP $remote_addr;
+ proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+ proxy_set_header X-Forwarded-Proto $scheme;
+ }
+}
+```
+
+### 3. 启用配置
+
+```bash
+sudo ln -s /etc/nginx/sites-available/racket-app /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+现在访问：
+
+```text
+http://example.com
+```
+
+请求路径为：
+
+```text
+Browser -> Nginx :80 -> Racket :8000
+```
+
+## 五、HTTPS（Let’s Encrypt）
+
+现实部署中 **强烈建议使用 HTTPS**。
+
+### 1. 安装 Certbot
+
+```bash
+sudo apt install certbot python3-certbot-nginx
+```
+
+### 2. 自动配置证书
+
+```bash
+sudo certbot --nginx -d example.com
+```
+
+Certbot 会：
+
+- 自动修改 Nginx 配置
+- 添加 443 端口
+- 配置证书路径
+- 设置 HTTP → HTTPS 跳转
+
+你不需要改 Racket 程序任何代码。
+
+## 六、静态资源交给 Nginx
+
+**不要让 Racket 去处理 CSS / JS / 图片。**
+
+### 1. 项目结构示例
+
+```text
+app/
+ ├─ main.rkt
+ └─ static/
+ ├─ style.css
+ └─ app.js
+```
+
+### 2. Nginx 配置静态目录
+
+```nginx
+location /static/ {
+ alias /home/user/app/static/;
+}
+```
+
+### 3. Racket 中引用
+
+```html
+<link rel="stylesheet" href="/static/style.css">
+```
+
+这样：
+
+- `/static/*` → Nginx 直接返回
+- `/` → Racket 处理
+
+性能和结构都会更清晰。
+
+## 七、Racket 程序如何长期运行
+
+### 1. 不要用 SSH 会话跑
+
+错误示例：
+
+```bash
+ssh server
+racket main.rkt
+```
+
+### 2. 使用 systemd（推荐）
+
+创建服务文件：
+
+```bash
+sudo nano /etc/systemd/system/racket-app.service
+```
+
+```ini
+[Unit]
+Description=Racket Web Application
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/home/user/app
+ExecStart=/usr/bin/racket main.rkt
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+启动服务：
+
+```bash
+sudo systemctl daemon-reexec
+sudo systemctl enable racket-app
+sudo systemctl start racket-app
+```
+
+## 八、常见问题与排查思路
+
+### 1. 浏览器 502 Bad Gateway
+
+- Racket 程序是否在跑？
+- 端口是否一致？
+- 是否监听在 `127.0.0.1`？
+
+### 2. 访问慢
+
+- 静态资源是否仍由 Racket 提供？
+- 是否开启 gzip（Nginx 默认支持）
+
+### 3. 路径不对
+
+- `proxy_pass` 是否带 `/`
+- Racket 是否假设根路径为 `/`
+
+## 九、推荐的部署心智模型
+
+作为 Racket 开发者，你可以这样理解：
+
+- **Racket**：业务逻辑、状态、规则
+- **Nginx**：网络、协议、安全、性能
+
+你只需要保证：
+
+> Racket 程序在本机一个端口上 **稳定响应 HTTP**
+
+剩下的，全部交给 Nginx。
+
+## 结语
+
+Nginx 并不是 Racket 的对立面，而是它在生产环境中的 **天然搭档**。
+
+一旦你掌握了这个部署模式，你会发现：
+
+- 本地开发 → 服务器上线几乎无差别
+- Racket Web 完全可以胜任严肃的服务端工作
+
+这正是 Racket 作为「可扩展语言」在工程实践中的价值所在。

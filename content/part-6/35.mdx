@@ -1,0 +1,173 @@
+# 宏——让 Racket 语言自己长出来的方式
+
+> Racket 的宏不是黑魔法——它是一段在编译期运行的程序，吃进语法树，吐出新的语法树。理解了“树替换”这一件事，你就能让语言长出它本来没有的构造。
+
+上一章末尾留了个悬念：管道 `->` 看起来像函数，却没法当参数传给 `map`。为什么？因为它根本不是函数——在程序运行之前，`->` 就已经把 `(-> x f g)` 改写成了 `(g (f x))`。等运行时到来，`->` 已经不在了，留下的只有改写后的嵌套调用。
+
+干这件事的，就是宏。可宏到底是什么——是函数？是某种编译器黑魔法？这一章用一句话捅破：宏是编译期的一段树替换。讲清原理之后，带你亲手写一个自己的 `->`。
+
+## 宏是什么：编译期的树替换
+
+先看 Racket 内置的 `when`：
+
+```racket
+(when (> x 0)
+ (displayln "正数")
+ x)
+```
+
+`when` 是宏，不是函数。它要做两件函数做不到的事：条件为假时完全不执行 body，而且 body 可以是多行。编译器看到 `when` 时，会把它展开成 `if`：
+
+```racket
+(if (> x 0)
+ (begin
+ (displayln "正数")
+ x)
+ (void))
+```
+
+展开发生在编译期，比运行早一步。宏接收的是还没求值的代码——准确地说是语法树的一个片段，叫语法对象（syntax object）；吐出来的也必须是一段合法的语法树。编译器拿这段新树继续编译，原来的 `when` 就像从没出现过。
+
+关键的一点：宏处理的是树，不是字符串。字符串替换分不清 `x` 是变量名还是字符串里的字符，树替换不会犯这种错——因为宏看到的就是一棵带结构的树，每个节点都有确定的位置。
+
+**宏是编译期跑的一段程序，吃进语法树，吐出的还是语法树。**
+
+那宏和函数到底差在哪？一张表说清：
+
+| | 函数 | 宏 |
+|---|---|---|
+| 拿到什么 | 已经求过值的参数 | 还没求值的语法 |
+| 何时工作 | 运行时 | 编译期 |
+| 产出 | 一个值 | 一段代码 |
+| 能造新语法吗 | 不能 | 能 |
+
+函数拿到参数时，参数已经被求值过了。如果 `unless` 是函数，那么 `(unless cond expr)` 里的 `expr` 在调用前就会被算一遍——哪怕条件为假，它的副作用也已经发生了。短路求值、新的控制结构、能改变求值顺序的语法糖，函数统统无能为力，因为它们没有“在求值之前动手”的机会。
+
+**函数算出一个值，宏造出一段代码。**
+
+## define-syntax-rule：模式与模板
+
+最简单的宏，实现一个 `my-unless`（Racket 已内置 `unless`，这里加 `my-` 前缀避免冲突）：
+
+```racket
+#lang racket
+
+; my-unless: run body when cond is false, otherwise nothing
+(define-syntax-rule (my-unless cond body ...)
+ (if cond (void) (begin body ...)))
+```
+
+左边 `(my-unless cond body ...)` 是模式：`cond` 匹配一个表达式，`body ...` 匹配零个或多个表达式（省略号 `...` 表示“一串”）。右边是模板，模式里匹配到的东西原样填进去。
+
+调用 `(my-unless #f (displayln "hi"))` 时，`cond` 匹到 `#f`，`body ...` 匹到 `(displayln "hi")`，展开成：
+
+```racket
+(if #f (void) (begin (displayln "hi")))
+;; hi
+```
+
+`define-syntax-rule` 只能写一条规则，但已经能搞定一大批实用宏。再看一个调试利器 `log!`——打印一个变量的名字和值，再把这个值原样返回：
+
+```racket
+(define-syntax-rule (log! var)
+ (begin
+ (displayln (format "~a = ~a" 'var var))
+ var))
+
+(define x 42)
+(log! x)
+;; x = 42
+```
+
+注意模板里的 `'var`：模式变量 `var` 匹到的是标识符 `x`，在模板里给它加引号 `'var`，得到的是符号 `x` 本身，而不是它的值。这就是宏能“看见代码”的关键——它能拿到变量名，不只是变量里的值。
+
+## 卫生：宏替你管好名字
+
+宏会往生成的代码里塞自己的临时名字。来看交换两个变量值的 `swap!`：
+
+```racket
+(define-syntax-rule (swap! a b)
+ (let ([tmp a])
+ (set! a b)
+ (set! b tmp)))
+
+(let ([x 1] [tmp 2])
+ (swap! x tmp)
+ (list x tmp))
+;; '(2 1)
+```
+
+宏的模板里有个 `tmp`，调用处也有个 `tmp`。如果是朴素的文本替换，这俩 `tmp` 会撞车，结果完全乱掉——`tmp` 会先把 `x` 存起来，紧接着被自己的新值覆盖。但实际跑出来是 `(2 1)`，交换完全正确。
+
+这就是 Racket 宏的卫生（hygiene）：宏引入的名字会被自动“染上颜色”，和调用处的同名变量区分开。用户代码里的 `tmp` 是用户的 `tmp`，宏模板里的 `tmp` 是宏自己的 `tmp`，两者井水不犯河水。反过来也一样——宏也不会意外读到或污染用户作用域里的名字。
+
+**卫生让宏可以放心用任何临时变量名，永远不和用户的名字撞车。** 这是 Lisp 系语言几十年攒下来的安全网，你不必自己操心。
+
+## syntax-case：需要计算时上场
+
+`define-syntax-rule` 只能“模式套模板”，一旦展开逻辑需要判断、需要计算，就力不从心。这时换上 `syntax-case`。
+
+把上面的 `swap!` 升级一下：原来 `(swap! x 2)` 会报一串来自 `set!` 的晦涩错误，因为 `2` 不是标识符。用 `syntax-case` 重写，加一道检查，让错误直接来自 `swap!` 自己：
+
+```racket
+(define-syntax (swap! stx)
+ (syntax-case stx ()
+ [(_ a b)
+ ; check both arguments are identifiers before expanding
+ (if (and (identifier? #'a) (identifier? #'b))
+ #'(let ([tmp a])
+ (set! a b)
+ (set! b tmp))
+ (raise-syntax-error #f "参数必须是标识符" stx))]))
+```
+
+两个新东西。`#'(...)` 是构造语法对象的简写，就像 `'(...)` 构造列表，`#'(...)` 构造的是带源信息的语法树。模式里的 `#'a`、`#'b` 把匹配到的片段取出来，交给 `identifier?` 这样的普通函数去检查。`syntax-case` 把“模式匹配”和“任意 Racket 表达式”混在了一起，`#'` 只是其中一种表达式——需要套模板时用 `#'`，需要判断时写普通的 `if`。
+
+和 `define` 对应 `let` 一样，宏也有局部绑定：`let-syntax` 在一段代码里临时引入一个宏，`letrec-syntax` 允许这些宏互相引用。日常用得不多，知道它们存在就行。
+
+## 亲手造一个 `->`
+
+上一章的伏笔，到这里兑现。
+
+`->` 要把 `(-> x f g h)` 变成 `(h (g (f x)))`——从左往右流，每一步把上一步的结果塞进下一个函数。一条规则写不完，因为参数个数不定。用支持多规则的 `define-syntax` 配 `syntax-rules`，写成一个递归宏：
+
+```racket
+(define-syntax my->
+ (syntax-rules ()
+ [(_ x) x] ; only one left: that is the result
+ [(_ x f rest ...) (my-> (f x) rest ...)])) ; thread (f x) through the rest
+
+(my-> "41" string->number add1 number->string)
+;; "42"
+```
+
+展开过程像剥洋葱：`(my-> "41" string->number add1 number->string)` 先变成 `(my-> (string->number "41") add1 number->string)`，再变成 `(my-> (add1 (string->number "41")) number->string)`，最后变成 `(number->string (add1 (string->number "41")))`——正好是上一章手工写的那个嵌套调用。
+
+![racket-macro-expansion-ast](/images/racket-macro-expansion-ast.svg)
+
+第二条规则的模式 `[(_ x f rest ...)]` 里，`rest ...` 匹配“剩下的一串”，模板里递归调用自己，把 `(f x)` 当作新的起点继续穿。一个完整的管道宏，满打满算三行。
+
+**`->` 必须是宏——它要在求值之前重排代码，这件事函数做不到。**
+
+## 暗刃：重复求值
+
+宏好写，也好写错。最经典的坑是重复求值。想写一个短路的 `my-or`：
+
+```racket
+(define-syntax-rule (my-or a b)
+ (if a a b))
+```
+
+看上去没毛病。但调用 `(my-or (begin (displayln "算了一次") #t) 5)` 会打印两次“算了一次”——因为 `a` 在 `if` 里出现了两遍，被求值了两遍。凡是参数可能带副作用，都得先存一次：
+
+```racket
+(define-syntax-rule (my-or a b)
+ (let ([tmp a])
+ (if tmp tmp b)))
+```
+
+用一个临时变量 `tmp` 把 `a` 固定下来，只算一遍。卫生保证了这里的 `tmp` 不会和用户代码里的任何名字冲突——上一节讲的安全网，这里正好接住。
+
+**凡是参数可能带副作用，都要先存进一个临时变量。** 判断什么时候该用宏，也有一句很管用的话：先问自己，这个问题函数能解决吗？能，就别用宏。宏的力量是造新语法，不是函数的升级版。
+
+> 宏让 Racket 成了一种会自己生长的语言——缺一个控制结构，缺一个管道，你都可以亲手给它长出来。

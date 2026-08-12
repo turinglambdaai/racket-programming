@@ -1,0 +1,206 @@
+# 模式匹配——用形状拆解数据
+
+> `match` 让你按数据的"形状"做判断：一次匹配同时完成"是不是这种结构"和"把里面的部件取出来"两件事。它是 `cond` 的进化版——`cond` 只比值的相等，`match` 能比形状。
+
+你拆过嵌套的列表吗？用 `car`、`cdr` 一层一层剥，代码很快糊成一堆括号；用 `cond` 判断"是不是三元素列表"，判断完了还得再 `cadr`、`caddr` 把元素取出来。判断一次、提取一次，同一份结构被你描述了两遍。
+
+模式匹配把这两步合一：你把数据的形状画在模式里，Racket 既拿它做判断、又顺手把部件绑到变量上。
+
+## 先看清 `match` 的骨架
+
+判断一个值是不是 3，`cond` 这么写：
+
+```racket
+(cond
+ [(equal? x 3) 'yes]
+ [else 'no])
+```
+
+`match` 这么写：
+
+```racket
+(match x
+ [3 'yes]
+ [_ 'no])
+```
+
+`3` 是字面量模式，匹配等于 3 的值；`_` 是通配模式，匹配任何值。每一行 `[模式 结果]` 是一个分支，从上往下试，第一个匹配的执行，跟 `cond` 一样；一个都匹配不上就抛异常。差别在后面：一旦模式里出现结构，`match` 的威力就显出来了。
+
+## 三个最朴素的模式
+
+所有复杂模式，都由字面量、变量、通配符这三种原子搭起来。
+
+字面量匹配一个具体的值——数字、字符串、布尔、字符都行：
+
+```racket
+(match "ok"
+ ["yes" 'accepted]
+ ["no" 'rejected]
+ [_ 'unknown]) ;; 'unknown
+```
+
+变量匹配任何值，并把它绑定到一个名字上。一个单独的标识符（只要不是 `_`、`...` 这类保留写法）就是变量模式：
+
+```racket
+(match 42
+ [x x]) ;; 42，x 被绑到 42
+```
+
+通配符 `_` 同样匹配任何值，但不绑定——你只关心"匹配上了"，不关心值是什么。在 `cond` 里你写 `else` 兜底，在 `match` 里 `else` 只是个普通变量名，兜底要用 `_`。
+
+## 按形状拆开列表
+
+列表是 Lisp 的心脏，也是模式匹配最常发力之处。
+
+固定长度的列表，用 `list` 模式，按位置绑变量：
+
+```racket
+(match '(1 2 3)
+ [(list a b c) (+ a b c)]) ;; 6
+```
+
+长度不定，用 `...`（省略号模式）吃掉任意多个元素，绑成一个列表：
+
+```racket
+(match '(1 2 3 4)
+ [(list first rest ...) (list first rest)])
+;; '(1 (2 3 4))
+```
+
+`first` 匹配第一个元素，`rest ...` 匹配剩下的零个或多个。把 `first` 写在前面，就锁定了"列表非空"——少一个元素都匹配不上。想连空列表也接住，写 `(list xs ...)` 即可，`...` 本身允许匹配零次。
+
+要拿点对的 car 和 cdr，用 `cons` 模式：
+
+```racket
+(match '(1 . 2)
+ [(cons head tail) (list head tail)]) ;; '(1 2)
+```
+
+`cons` 匹配任意点对，`head` 绑 car，`tail` 绑 cdr。递归处理链表时，`(cons head tail)` 是最自然的写法——`tail` 还是个列表，接着往下剥。
+
+## 按字段名拆开结构体
+
+自定义结构体用 `struct` 定义，匹配时直接按字段位置命名：
+
+```racket
+(struct pos (x y))
+
+(match (pos 3 4)
+ [(pos x y) (sqrt (+ (* x x) (* y y)))])
+;; 5，直角三角形斜边
+```
+
+写 `(pos x y)`，等于说"这是个 pos，把它的两个字段分别叫 x 和 y"，比 `(pos-x p)`、`(pos-y p)` 直观得多。结构体有继承时，模式要把父类字段也算上。`dog` 继承自 `animal`，匹配时第一个字段是 `animal` 的 `name`，第二个才是 `dog` 自己的 `age`：
+
+```racket
+(struct animal (name))
+(struct dog animal (age)) ; dog 继承 animal
+
+(match (dog "Lucky" 5)
+ [(dog name age) (format "~a is ~a" name age)])
+;; "Lucky is 5"
+```
+
+**结构体模式按所有字段（含父类）从左到右对应，父类字段在前。**
+
+## 用谓词给模式把关
+
+光会匹配形状还不够——有时候你要"是数字，并且……"。`?` 模式接一个谓词，先检查值过不过关，过了再交给后面的模式：
+
+```racket
+(match 42
+ [(? exact-integer? n) (* n 2)]) ;; 84
+```
+
+`(? exact-integer? n)` 的意思：值满足 `exact-integer?`，就把它绑到 `n`。谓词可以是任何单参数函数，包括你自己写的 `lambda`：
+
+```racket
+(match 5
+ [(? (λ (x) (< x 10)) small) (format "~a 太小了" small)])
+;; "5 太小了"
+```
+
+`?` 后面还能再套模式，组合出"满足条件、形状也对"的双重约束。
+
+## 把模式组合起来
+
+真正的复杂判断，靠几个组合模式拼起来。
+
+`or` 匹配几种形状之一，每个分支必须绑定同一组变量：
+
+```racket
+(match 'yes
+ [(or 'yes 'y) 'ok]) ;; 'ok
+```
+
+`and` 要求所有模式同时成立，常用来"先绑个名字，再提条件"：
+
+```racket
+(match 8
+ [(and (? integer?) (? even?)) 'good]) ;; 'good
+```
+
+`app` 是最灵活的一个——它把一个函数作用到值上，再拿结果去匹配模式。比如先求列表长度，再比是不是 3：
+
+```racket
+(match '(a b c)
+ [(app length 3) 'three-elements]) ;; 'three-elements
+```
+
+`app` 让你能"先变换、再判断"，任何函数都能塞进模式里。`not` 是它们的反面，匹配"不是这种形状"的值，不绑定任何变量：
+
+```racket
+(match "hi"
+ [(not "bye") 'greeting]) ;; 'greeting
+```
+
+## 在定义里直接拆
+
+模式匹配不必只写在 `match` 里，它还能钻进 `define` 和 `let`。
+
+`match-define` 一步完成"求值 + 拆解"，省得再写一遍 `car` `cdr`：
+
+```racket
+(match-define (list a b) '(1 2))
+a ;; 1
+b ;; 2
+```
+
+`match-let` 把同样的能力放进 `let`，一次性拆开多个值：
+
+```racket
+(match-let ([(list a b) '(1 2)]
+ [(vector x y) #(3 4)])
+ (list a b x y)) ;; '(1 2 3 4)
+```
+
+要按顺序复用前面的绑定，换 `match-let*`，就像 `let*` 之于 `let`。定义函数时想把参数直接按模式拆开，用 `define/match`，每个分支是一组对应参数的模式：
+
+```racket
+(define/match (sum3 lst)
+ [((list a b c)) (+ a b c)])
+
+(sum3 '(1 2 3)) ;; 6
+```
+
+注意那层双括号——`define/match` 的每个分支对应一组参数模式，所以 `(list a b c)` 外面还要包一层。
+
+**只要数据有固定形状，就别再手动 `car` `cdr`——`match-define` 直接拆开。**
+
+## 实战：拆解一门小语言
+
+模式匹配的杀手锏，是处理 S-表达式这类"数据即程序"的结构。写一个只能做加减乘除的表达式求值器，整个核心就这几行：
+
+```racket
+(define (eval-expr expr)
+ (match expr
+ [(list '+ a b) (+ (eval-expr a) (eval-expr b))]
+ [(list '* a b) (* (eval-expr a) (eval-expr b))]
+ [(? number? n) n]))
+
+(eval-expr '(+ 1 (* 2 3))) ;; 7
+```
+
+每条规则就是一个模式：看到 `(+ a b)` 就递归求 `a` 和 `b` 再相加，看到数字就原样返回。`'+` 是字面量，匹配那个符号本身（写 `+` 不加引号会被当成变量）。**写解释器、走 AST、解析配置，本质都是按形状分派——`match` 正是为此而生。**
+
+> 模式匹配让你用数据的形状说话：画出一个模式，判断与提取一次完成。一旦习惯了按形状思考，`car`/`cdr` 和嵌套 `cond` 的噪音就从代码里消失。

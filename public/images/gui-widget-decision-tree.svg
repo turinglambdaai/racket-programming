@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 620" font-family='"PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'>
+  <title>按"用户要做什么"挑 GUI 控件</title>
+  <desc>Racket GUI 8 种控件的语义决策树：从"用户要做什么"出发，沿意图分派到具体控件类。</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4a4a4a"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="1100" height="620" fill="#f8f6f3"/>
+
+  <!-- Title -->
+  <text x="550" y="44" text-anchor="middle" font-size="20" font-weight="700" fill="#1a1a1a">按"用户要做什么"挑控件</text>
+  <line x1="520" y1="56" x2="580" y2="56" stroke="#d97757" stroke-width="3" stroke-linecap="round"/>
+  <text x="550" y="78" text-anchor="middle" font-size="12" fill="#6a6a6a">从意图出发 → 8 种控件覆盖九成场景</text>
+
+  <!-- ===== 根节点 ===== -->
+  <g>
+    <rect x="40" y="270" width="170" height="70" rx="12" fill="#d97757" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="125" y="300" text-anchor="middle" font-size="11" font-weight="600" fill="#f8f6f3" letter-spacing="1.5">起点</text>
+    <text x="125" y="324" text-anchor="middle" font-size="15" font-weight="700" fill="#f8f6f3">用户要做什么？</text>
+  </g>
+
+  <!-- ===== 第一层：4 个意图大类（决策分叉） ===== -->
+  <!-- 分叉线：根 -> 4 个大类 -->
+  <path d="M 210 305 L 250 305" fill="none" stroke="#4a4a4a" stroke-width="1.5"/>
+  <path d="M 250 130 L 250 480" fill="none" stroke="#4a4a4a" stroke-width="1.5"/>
+  <line x1="250" y1="135" x2="300" y2="135" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="250" y1="250" x2="300" y2="250" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="250" y1="365" x2="300" y2="365" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="250" y1="475" x2="300" y2="475" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 大类 1：触发动作 -->
+  <g>
+    <rect x="305" y="108" width="150" height="54" rx="8" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="380" y="131" text-anchor="middle" font-size="10" fill="#6a6a6a">意图一</text>
+    <text x="380" y="150" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">触发一个动作</text>
+  </g>
+  <!-- 大类 2：只读展示 -->
+  <g>
+    <rect x="305" y="223" width="150" height="54" rx="8" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="380" y="246" text-anchor="middle" font-size="10" fill="#6a6a6a">意图二</text>
+    <text x="380" y="265" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">只看，不改</text>
+  </g>
+  <!-- 大类 3：输入 -->
+  <g>
+    <rect x="305" y="320" width="150" height="90" rx="8" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="380" y="343" text-anchor="middle" font-size="10" fill="#6a6a6a">意图三</text>
+    <text x="380" y="362" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">要往里输东西</text>
+    <text x="380" y="384" text-anchor="middle" font-size="10" fill="#6a6a6a">文字？二态？多选一？</text>
+  </g>
+  <!-- 大类 4：特殊 -->
+  <g>
+    <rect x="305" y="448" width="150" height="54" rx="8" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="380" y="471" text-anchor="middle" font-size="10" fill="#6a6a6a">意图四</text>
+    <text x="380" y="490" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">看进度 / 自绘</text>
+  </g>
+
+  <!-- ===== 第二层：叶子（具体控件类） ===== -->
+  <!-- 叶子 1：button% -->
+  <line x1="455" y1="135" x2="540" y2="135" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <g>
+    <rect x="545" y="108" width="180" height="54" rx="8" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="635" y="131" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a1a">button%</text>
+    <text x="635" y="150" text-anchor="middle" font-size="10" fill="#6a6a6a">回调里写动作</text>
+  </g>
+
+  <!-- 叶子 2：message% -->
+  <line x1="455" y1="250" x2="540" y2="250" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <g>
+    <rect x="545" y="223" width="180" height="54" rx="8" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="635" y="246" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a1a">message%</text>
+    <text x="635" y="265" text-anchor="middle" font-size="10" fill="#6a6a6a">set-label 换文字</text>
+  </g>
+
+  <!-- 叶子 3a/b/c/d：text-field / check-box / radio-box / choice -->
+  <!-- 从意图三的分叉 -->
+  <path d="M 455 365 L 495 365" fill="none" stroke="#4a4a4a" stroke-width="1.5"/>
+  <path d="M 495 410 L 495 320" fill="none" stroke="#4a4a4a" stroke-width="1.5"/>
+  <line x1="495" y1="325" x2="540" y2="325" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="495" y1="370" x2="540" y2="370" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="495" y1="415" x2="540" y2="415" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="545" y="302" width="180" height="46" rx="8" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="568" y="320" font-size="10" fill="#6a6a6a">输一段文字</text>
+    <text x="568" y="338" font-size="13" font-weight="700" fill="#1a1a1a">text-field%</text>
+  </g>
+  <g>
+    <rect x="545" y="347" width="180" height="46" rx="8" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="568" y="365" font-size="10" fill="#6a6a6a">二态：开 / 关</text>
+    <text x="568" y="383" font-size="13" font-weight="700" fill="#1a1a1a">check-box%</text>
+  </g>
+  <g>
+    <rect x="545" y="392" width="180" height="46" rx="8" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="568" y="410" font-size="10" fill="#6a6a6a">互斥多选一</text>
+    <text x="568" y="428" font-size="13" font-weight="700" fill="#1a1a1a">radio-box% / choice%</text>
+  </g>
+  <!-- 互斥单选的进一步分叉：选项少 vs 选项多 -->
+  <path d="M 725 415 L 770 415" fill="none" stroke="#4a4a4a" stroke-width="1.5"/>
+  <path d="M 770 395 L 770 435" fill="none" stroke="#4a4a4a" stroke-width="1.5"/>
+  <line x1="770" y1="395" x2="820" y2="395" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="770" y1="435" x2="820" y2="435" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="800" y="388" text-anchor="middle" font-size="9" fill="#6a6a6a">选项少</text>
+  <text x="800" y="452" text-anchor="middle" font-size="9" fill="#6a6a6a">选项多</text>
+  <g>
+    <rect x="825" y="378" width="135" height="34" rx="6" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="892" y="400" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a1a">radio-box%</text>
+  </g>
+  <g>
+    <rect x="825" y="418" width="135" height="34" rx="6" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="892" y="440" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a1a">choice%</text>
+  </g>
+
+  <!-- 叶子 4a/b：gauge% / canvas% -->
+  <path d="M 455 475 L 495 475" fill="none" stroke="#4a4a4a" stroke-width="1.5"/>
+  <path d="M 495 460 L 495 490" fill="none" stroke="#4a4a4a" stroke-width="1.5"/>
+  <line x1="495" y1="460" x2="540" y2="460" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="495" y1="490" x2="540" y2="490" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <g>
+    <rect x="545" y="442" width="180" height="38" rx="8" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="568" y="467" font-size="12" font-weight="700" fill="#1a1a1a">gauge%</text>
+    <text x="610" y="467" font-size="10" fill="#6a6a6a">看进度</text>
+  </g>
+  <g>
+    <rect x="545" y="472" width="180" height="38" rx="8" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="568" y="497" font-size="12" font-weight="700" fill="#1a1a1a">canvas%</text>
+    <text x="612" y="497" font-size="10" fill="#6a6a6a">自绘 / 富文本</text>
+  </g>
+
+  <!-- 底部说明 -->
+  <text x="550" y="568" text-anchor="middle" font-size="12" fill="#1a1a1a">先问"用户做什么"，控件自然就跳出来。</text>
+  <text x="550" y="588" text-anchor="middle" font-size="10" fill="#6a6a6a">橙色 = 起点 · 绿色 = 意图大类 · 蓝色 = 控件类 · 米色 = 二次分叉</text>
+</svg>

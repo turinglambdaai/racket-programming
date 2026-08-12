@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 560" font-family='"PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'>
+  <title>宏展开：语法树到语法树</title>
+  <desc>以 threading 宏 my-> 为例展示宏的编译期展开过程：(my-> "41" f g h) 一步步重排成 (h (g (f "41")))。每一步都是语法树的替换，发生在编译期、求值之前。</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4a4a4a"/>
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d97757"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1100" height="560" fill="#f8f6f3"/>
+
+  <!-- Title -->
+  <text x="550" y="42" text-anchor="middle" font-size="20" font-weight="700" fill="#1a1a1a">宏展开 · 语法树 → 语法树</text>
+  <line x1="520" y1="54" x2="580" y2="54" stroke="#d97757" stroke-width="3" stroke-linecap="round"/>
+  <text x="550" y="74" text-anchor="middle" font-size="12" fill="#6a6a6a">编译期把 (my-> x f g h) 一步步重排成 (h (g (f x)))，发生在求值之前</text>
+
+  <!-- ===== 顶部说明：编译期，不是运行时 ===== -->
+  <g>
+    <rect x="80" y="98" width="940" height="36" rx="8" fill="#e8e6e3" stroke="#4a4a4a" stroke-width="1"/>
+    <text x="100" y="121" font-size="11" fill="#1a1a1a">⏱ 编译期（程序还没跑）—— 宏接收未求值的语法树片段，吐出新的语法树，编译器拿新树继续编译</text>
+  </g>
+
+  <!-- ===== 三步展开，每步一个语法树 ===== -->
+  <!-- 步骤标号 -->
+  <text x="180" y="180" text-anchor="middle" font-size="12" font-weight="700" fill="#d97757">第 1 步</text>
+  <text x="550" y="180" text-anchor="middle" font-size="12" font-weight="700" fill="#d97757">第 2 步</text>
+  <text x="920" y="180" text-anchor="middle" font-size="12" font-weight="700" fill="#d97757">第 3 步</text>
+
+  <!-- 树 1：(my-> "41" f g h) -->
+  <g>
+    <rect x="60" y="200" width="240" height="170" rx="10" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="180" y="222" text-anchor="middle" font-size="10" fill="#6a6a6a">宏调用</text>
+    <!-- 根 my-> -->
+    <rect x="140" y="232" width="80" height="28" rx="6" fill="#d97757" stroke="#4a4a4a" stroke-width="1"/>
+    <text x="180" y="251" text-anchor="middle" font-size="12" font-weight="700" fill="#f8f6f3" font-family="monospace">my-></text>
+    <!-- 四个子节点 -->
+    <line x1="180" y1="260" x2="100" y2="295" stroke="#4a4a4a" stroke-width="1"/>
+    <line x1="180" y1="260" x2="155" y2="295" stroke="#4a4a4a" stroke-width="1"/>
+    <line x1="180" y1="260" x2="210" y2="295" stroke="#4a4a4a" stroke-width="1"/>
+    <line x1="180" y1="260" x2="265" y2="295" stroke="#4a4a4a" stroke-width="1"/>
+    <rect x="72" y="295" width="56" height="24" rx="4" fill="#f8f6f3" stroke="#4a4a4a" stroke-width="1"/>
+    <text x="100" y="311" text-anchor="middle" font-size="11" font-family="monospace" fill="#1a1a1a">"41"</text>
+    <rect x="132" y="295" width="46" height="24" rx="4" fill="#f8f6f3" stroke="#4a4a4a" stroke-width="1"/>
+    <text x="155" y="311" text-anchor="middle" font-size="11" font-family="monospace" fill="#1a1a1a">f</text>
+    <rect x="190" y="295" width="46" height="24" rx="4" fill="#f8f6f3" stroke="#4a4a4a" stroke-width="1"/>
+    <text x="213" y="311" text-anchor="middle" font-size="11" font-family="monospace" fill="#1a1a1a">g</text>
+    <rect x="245" y="295" width="46" height="24" rx="4" fill="#f8f6f3" stroke="#4a4a4a" stroke-width="1"/>
+    <text x="268" y="311" text-anchor="middle" font-size="11" font-family="monospace" fill="#1a1a1a">h</text>
+    <text x="180" y="352" text-anchor="middle" font-size="10" fill="#6a6a6a">匹配规则 2：(_ x f rest ...)</text>
+  </g>
+
+  <!-- 箭头 1→2 -->
+  <path d="M 305 285 L 405 285" fill="none" stroke="#d97757" stroke-width="2.5" marker-end="url(#arrow-orange)"/>
+  <text x="355" y="276" text-anchor="middle" font-size="10" fill="#d97757">把 (f x) 塞进新起点</text>
+
+  <!-- 树 2：(my-> (f "41") g h) -->
+  <g>
+    <rect x="410" y="200" width="280" height="170" rx="10" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="550" y="222" text-anchor="middle" font-size="10" fill="#6a6a6a">第 1 次重排后</text>
+    <!-- 根 my-> -->
+    <rect x="510" y="232" width="80" height="28" rx="6" fill="#d97757" stroke="#4a4a4a" stroke-width="1"/>
+    <text x="550" y="251" text-anchor="middle" font-size="12" font-weight="700" fill="#f8f6f3" font-family="monospace">my-></text>
+    <line x1="550" y1="260" x2="460" y2="295" stroke="#4a4a4a" stroke-width="1"/>
+    <line x1="550" y1="260" x2="540" y2="295" stroke="#4a4a4a" stroke-width="1"/>
+    <line x1="550" y1="260" x2="620" y2="295" stroke="#4a4a4a" stroke-width="1"/>
+    <!-- 子树 (f "41") -->
+    <rect x="420" y="295" width="80" height="40" rx="4" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1"/>
+    <text x="460" y="320" text-anchor="middle" font-size="11" font-family="monospace" fill="#1a1a1a">(f "41")</text>
+    <rect x="520" y="295" width="40" height="24" rx="4" fill="#f8f6f3" stroke="#4a4a4a" stroke-width="1"/>
+    <text x="540" y="311" text-anchor="middle" font-size="11" font-family="monospace" fill="#1a1a1a">g</text>
+    <rect x="600" y="295" width="40" height="24" rx="4" fill="#f8f6f3" stroke="#4a4a4a" stroke-width="1"/>
+    <text x="620" y="311" text-anchor="middle" font-size="11" font-family="monospace" fill="#1a1a1a">h</text>
+    <text x="550" y="352" text-anchor="middle" font-size="10" fill="#6a6a6a">再次匹配规则 2</text>
+  </g>
+
+  <!-- 箭头 2→3 -->
+  <path d="M 695 285 L 795 285" fill="none" stroke="#d97757" stroke-width="2.5" marker-end="url(#arrow-orange)"/>
+  <text x="745" y="276" text-anchor="middle" font-size="10" fill="#d97757">继续穿</text>
+
+  <!-- 树 3：(h (g (f "41"))) 最终结果 -->
+  <g>
+    <rect x="800" y="200" width="240" height="170" rx="10" fill="#f4e4c1" stroke="#d97757" stroke-width="2"/>
+    <text x="920" y="222" text-anchor="middle" font-size="10" fill="#d97757">最终 · 纯嵌套调用</text>
+    <!-- 根 h -->
+    <rect x="890" y="232" width="60" height="28" rx="6" fill="#d97757" stroke="#4a4a4a" stroke-width="1"/>
+    <text x="920" y="251" text-anchor="middle" font-size="13" font-weight="700" fill="#f8f6f3" font-family="monospace">h</text>
+    <line x1="920" y1="260" x2="920" y2="290" stroke="#4a4a4a" stroke-width="1"/>
+    <!-- 子树 (g (f "41")) -->
+    <rect x="840" y="290" width="160" height="60" rx="6" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1"/>
+    <rect x="905" y="296" width="30" height="20" rx="3" fill="#d97757" stroke="#4a4a4a" stroke-width="0.8"/>
+    <text x="920" y="310" text-anchor="middle" font-size="10" font-weight="700" fill="#f8f6f3" font-family="monospace">g</text>
+    <line x1="920" y1="316" x2="880" y2="330" stroke="#4a4a4a" stroke-width="0.8"/>
+    <line x1="920" y1="316" x2="960" y2="330" stroke="#4a4a4a" stroke-width="0.8"/>
+    <text x="880" y="342" text-anchor="middle" font-size="9" font-family="monospace" fill="#1a1a1a">(f "41")</text>
+    <text x="960" y="342" text-anchor="middle" font-size="9" fill="#6a6a6a"></text>
+    <text x="920" y="352" text-anchor="middle" font-size="10" fill="#6a6a6a">宏已消失，只剩普通调用</text>
+  </g>
+
+  <!-- ===== 底部：函数 vs 宏 对照 ===== -->
+  <g>
+    <rect x="80" y="400" width="940" height="140" rx="10" fill="#f8f6f3" stroke="#4a4a4a" stroke-width="1" stroke-opacity="0.4"/>
+    <text x="100" y="426" font-size="13" font-weight="700" fill="#1a1a1a">宏和函数的差别，一句话捅破</text>
+
+    <!-- 两列对比 -->
+    <g>
+      <rect x="100" y="440" width="430" height="86" rx="8" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+      <text x="120" y="462" font-size="12" font-weight="700" fill="#1a1a1a">函数 · 运行时</text>
+      <text x="120" y="482" font-size="11" fill="#1a1a1a">拿到的是 <tspan font-weight="700">已经求过值</tspan> 的参数</text>
+      <text x="120" y="500" font-size="11" fill="#1a1a1a">产出一个 <tspan font-weight="700">值</tspan></text>
+      <text x="120" y="518" font-size="11" fill="#6a6a6a">改不了求值顺序，造不了新语法</text>
+    </g>
+    <g>
+      <rect x="570" y="440" width="430" height="86" rx="8" fill="#f4e4c1" stroke="#d97757" stroke-width="1.5"/>
+      <text x="590" y="462" font-size="12" font-weight="700" fill="#d97757">宏 · 编译期</text>
+      <text x="590" y="482" font-size="11" fill="#1a1a1a">拿到的是 <tspan font-weight="700">还没求值</tspan> 的语法树</text>
+      <text x="590" y="500" font-size="11" fill="#1a1a1a">吐出一段 <tspan font-weight="700">代码</tspan>（新的语法树）</text>
+      <text x="590" y="518" font-size="11" fill="#6a6a6a">能在求值前动手 —— 造语法糖、改控制流</text>
+    </g>
+  </g>
+</svg>

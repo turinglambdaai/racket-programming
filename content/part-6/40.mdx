@@ -1,0 +1,158 @@
+# 惰性求值——按需才算
+
+> Racket 默认急着把每个参数都算好；可你想表示“所有自然数”、或跳过那段永远用不上的计算时，急就急不来了。`delay`/`force` 把计算推迟到催账那一刻，`lazy` 和流让你装下一整条无穷的链。
+
+你写过 `(map (λ (x) (* x x)) '(1 2 3))`，知道 Racket 会老老实实把每个元素算出来。但你想过没有：要表示从 1 开始的所有自然数，该用什么装？一个明明用不上的参数，凭什么非要先算它？Racket 默认严格求值——函数调用前，参数全部算完。但标准库里备着一套按需计算的工具，专治这两种拧巴。这篇讲三件事：`delay`/`force` 怎么把计算存起来，`lazy` 为什么和 `delay` 不一样，`racket/stream` 如何把无穷装进有限内存。
+
+## 默认是急的
+
+看一个只用了第一个参数的函数：
+
+```racket
+(define (twice x y)
+ (+ x x))
+
+(twice 10 (/ 1 0))
+;; 报错：除以零——尽管 y 根本没被用到
+```
+
+`twice` 只碰了 `x`，`y` 白算。可 Racket 还是先把 `(/ 1 0)` 算了，于是炸了。这就是严格求值（call-by-value）：参数在函数体跑之前全部算完，用不用得上不管。
+
+**Racket 默认是严格求值——参数在函数调用前就全部算好了。**
+
+那能不能“先用再说”？能。把“算 `y`”这件事推迟到真正要读它的那一刻。
+
+## delay 与 force：先欠着，催了再给
+
+`delay` 把一个表达式打包成一个 promise——一张欠条。`force` 是来兑现欠条的：
+
+```racket
+(define p (delay (+ 1 2 3)))
+
+p
+;; 一个 promise——此时加法还没执行
+
+(promise? p)
+;; => #t
+
+(force p)
+;; => 6 第一次 force，真正算
+
+(force p)
+;; => 6 第二次直接走缓存
+```
+
+`promise?` 认得出 promise。关键在第二次 `force`：body 没有重跑。用带副作用的例子看得最清楚：
+
+```racket
+(define q (delay (displayln "算了一次") 42))
+
+(force q)
+;; 打印：算了一次
+;; => 42
+
+(force q)
+;; => 42 没再打印——缓存命中，body 没再执行
+```
+
+**`delay` 把一段计算打包成 promise，`force` 才真正去算，而且只算一次。** 算完的结果被缓存进 promise，之后每次 `force` 直接返回。这个“只算一次”是惰性用来提效的根：贵的那段计算，要么不算，要么只算一遍。
+
+## lazy：能串成链的 promise
+
+`delay` 够你推迟一个值。但惰性真正有用的地方是串成链——一节 promise 的 body 里又产出下一个 promise，像一条延迟求值的链表。这种场景要用 `lazy`，不是 `delay`。
+
+`lazy` 和 `delay` 长得几乎一样：
+
+```racket
+(define a (delay 1))
+(define b (lazy a)) ;; b 的 body 产出一个 promise
+
+(force b)
+;; => 1 一次 force 顺着链一路追到底
+```
+
+这段两个都跑通，差别藏在 body 又返回一个 promise 时。`delay` 追下一层是普通递归调用；`lazy` 则把自己的计算和下一个 promise 焊在一起，`force` 沿着链 tail-call 一节节推进，链多长都不增加栈深。链短看不出区别，链一长——比如一条延迟求值的整数流——`delay` 会在深层 force 时堆栈，`lazy` 不会。
+
+**`lazy` 是为链生的——一次 `force` 沿着链 tail-call 走到底，长链不爆栈。** 这正是手搓惰性数据结构要用的积木。Racket 标准库的 `racket/stream` 就是拿它搭起来的。
+
+## 用流装下无穷
+
+自然数 1, 2, 3, ... 没有尽头。一个普通列表装不下，因为构造它就要无限循环。流（stream）可以——因为它把“还没算的尾巴”也存成一个延迟的 promise：
+
+```racket
+(require racket/stream)
+
+(define (integers-from n)
+ (stream-cons n (integers-from (+ n 1))))
+
+(define nats (integers-from 1))
+```
+
+`stream-cons` 像 `cons`，但它的第二个参数（尾巴）不会被立即求值。所以 `(integers-from 1)` 不会无限循环——它只造出第一节，把“下一节”欠着。
+
+要多少，取多少：
+
+```racket
+(stream->list (stream-take nats 5))
+;; => '(1 2 3 4 5)
+
+(stream-ref nats 99)
+;; => 100 只算到第 100 个，前面的全部缓存命中
+```
+
+**流把“还没算的尾巴”也存成 promise，所以无穷也能装进有限内存。** 取第几个就算到第几个，没碰到的从不存在。
+
+## 整条流水线都懒
+
+`racket/stream` 里的 `stream-map`、`stream-filter` 也都是惰性的——它们返回新流，不马上计算：
+
+```racket
+(define squares (stream-map (λ (x) (* x x)) nats))
+
+(stream->list (stream-take squares 5))
+;; => '(1 4 9 16 25)
+
+(define evens (stream-filter even? nats))
+
+(stream->list (stream-take evens 5))
+;; => '(2 4 6 8 10)
+```
+
+`nats` 无穷，`squares` 和 `evens` 也无穷。但取 5 个就只算 5 个——`stream-map` 不会先把整条 `nats` 平方完再交给你。
+
+甚至可以直接 `for` 遍历一条无穷流，按需打断：
+
+```racket
+(for ([x (in-stream (stream-filter even? nats))])
+ #:break (> x 10)
+ (displayln x))
+;; 2
+;; 4
+;; 6
+;; 8
+;; 10
+```
+
+`in-stream` 把流变成可遍历的序列，`#:break` 一旦满足就停。这条无穷流从头到尾没被算完——算到 10 就打住。
+
+**整条链只在被取走的那几个元素上计算，剩下的从不算。** map、filter、fold 可以层层套，中间不生成任何完整的中间列表。
+
+## 该懒的时候才懒
+
+惰性不是万灵药。每一个 promise 都是一次额外的分配和间接，每一次 `force` 都是一次“算过了没”的判断。把所有东西都 delay 一遍，程序只会更慢、更难调——求值时机被打散了，你很难知道某段计算究竟在哪个瞬间发生。
+
+惰性真正值得用的就三种场合：
+
+- 无穷或超长的数据，比如自然数流、文件按行读；
+- 算了可能用不上的值，比如某个昂贵分支的结果；
+- 想避免中间结构，比如多层 map/filter 套着、不想每层都生成完整列表。
+
+**惰性不是免费午餐，它换来了延迟和无穷，代价是每次 force 的开销和更难预测的求值时机。** 该急的地方急，该懒的地方懒。
+
+## 一个伏笔：stream-cons 是宏
+
+回到 `integers-from`：`(stream-cons n (integers-from (+ n 1)))`。如果 `stream-cons` 是普通函数，它的第二个参数会在调用前被求值——`(integers-from (+ n 1))` 立刻执行，无限递归，爆栈。
+
+但它没爆。因为 `stream-cons` 是个宏。它在编译期把 `(stream-cons a b)` 改写成“先存 `a`，把 `b` 包成一个延迟的 promise”，第二个参数根本没被算。这是宏能做、函数做不到的事：控制参数什么时候求值。`delay`、`lazy`、`stream-cons`、还有上一篇的 `->`，本质都在玩同一件事——改写求值时机。等你学到宏那一章，你会亲手造出一个自己的 `stream-cons`。
+
+> Racket 还有一门 `#lang lazy` 整语言，在那里连函数调用都是惰性的——参数自动 delay、结果自动 force。把整套机制塞进语言默认行为，是这套思想的极致版本。

@@ -1,0 +1,199 @@
+# Racket GUI 控件清单——内置库一次看全
+
+> `racket/gui` 自带一套跨平台桌面控件——窗口、面板、按钮、输入框、选择器、滑块、画布、菜单，`#lang racket/gui` 一声明就能用。这一篇按类别把常用控件过一遍清单。
+
+写桌面 GUI，最先卡住你的往往不是业务逻辑，而是界面——面对一个新窗口，脑子里第一个冒出来的问题常常是：这该用哪个控件？Racket 把一整套跨平台控件直接装进了语言里：不用额外依赖，不用学另一套界面描述语言，会基础语法就能开窗口、放按钮。
+
+姊妹篇 按“你要做什么”挑控件，这一篇按“库里有什么”过清单。两者互补——先在这里认全控件，再去那篇挑趁手的。
+
+下面所有例子都在 `#lang racket/gui` 下运行，从最小可运行窗口说起。
+
+## 一切的起点是 frame%
+
+每个 GUI 程序都从一个 `frame%` 开始：那个带标题栏的顶层窗口就是它。所有控件最终都挂在 `frame%`（或对话框 `dialog%`）下面。
+
+```racket
+#lang racket/gui
+
+(define frame (new frame% [label "Hello GUI"] [width 300] [height 200]))
+;; 窗口默认不显示，要主动调 show
+(send frame show #t)
+```
+
+`new` 创建对象，`send` 调用方法，这是 Racket 对象系统的固定写法，整篇都会用到。`show` 接一个布尔值：`#t` 显示，`#f` 隐藏。
+
+## 控件放进面板，才有排列
+
+直接把控件塞进 `frame%`，它们会乱排。Racket 的布局靠“面板”组织：面板决定子控件排成一行还是一列，控件自己不用管坐标。
+
+```racket
+;; 从上到下堆叠
+(define vp (new vertical-panel% [parent frame]))
+;; 从左到右排列
+(new horizontal-panel% [parent vp])
+;; 带标题边框，用来分组
+(new group-box-panel% [parent vp] [label "参数设置"])
+```
+
+面板可以嵌套，竖向面板里塞横向面板，就能拼出表格状的版式。
+
+**控件往面板里一放，怎么排是面板的事，不是控件的事。**
+
+## 文字的进与出
+
+显示一段不变的文字用 `message%`，收一行用户输入用 `text-field%`。
+
+```racket
+;; 只读提示
+(new message% [parent vp] [label "请输入你的名字："])
+
+;; 单行输入框，get-value 取出当前内容
+(define name-field (new text-field% [parent vp] [label "名字"]))
+
+(send name-field get-value) ;; 返回字符串
+```
+
+需要多行、可滚动的文字时，换一对组合：`text%` 负责存内容，`editor-canvas%` 负责把它显示出来。
+
+```racket
+(define ed (new text%))
+(new editor-canvas% [parent vp] [editor ed])
+(send ed insert "多行文本\n第二行")
+```
+
+**`text%` 本身不是控件，只是一个编辑器对象，必须靠 `editor-canvas%` 才看得见。**
+
+## 触发与勾选
+
+`button%` 是最直接的触发：点一下，跑一段回调。回调是个两参数的函数——控件本身加上一个事件对象。
+
+```racket
+(new button%
+ [parent vp]
+ [label "点我"]
+ [callback (λ (button event)
+ (displayln "被点了"))])
+```
+
+`check-box%` 表示一个布尔开关，`get-value` 返回 `#t` 或 `#f`，构造时用 `[value ...]` 指定初始状态。
+
+```racket
+(define agree (new check-box% [parent vp] [label "同意条款"] [value #f]))
+
+(send agree get-value) ;; #t 或 #f
+```
+
+## 从几个选项里挑一个
+
+单选场景有三个长相不同的控件，按“选项怎么展示”挑：`radio-box%` 把所有选项摊开成一组互斥按钮；`choice%` 折叠成下拉，只显示当前选中的那项；`list-box%` 是带滚动的列表，还能多选。三者构造时都要给 `[choices '(...)]`，取值都靠 `get-selection` 拿到选中项的序号。
+
+```racket
+;; 一组互斥按钮，选项一眼看全
+(new radio-box% [parent vp] [label "音量"] [choices '("低" "中" "高")])
+
+;; 下拉菜单，省地方
+(new choice% [parent vp] [choices '("红" "绿" "蓝")])
+
+;; 可滚动的列表，style 控制单选还是多选
+(new list-box% [parent vp] [label "清单"] [choices '("苹果" "香蕉" "橘子")])
+```
+
+**`radio-box%` 的选项创建后就不能增删，`choice%` 和 `list-box%` 却能在运行时 `append`、`delete`。** 选项会动态变化的场景，别用 `radio-box%`。
+
+## 数值的输入与显示
+
+数值范围用 `slider%` 收输入：拖动滑块改值，回调被触发。`min-value` 和 `max-value` 定范围，`init-value` 可选。
+
+```racket
+(new slider%
+ [parent vp]
+ [label "音量"]
+ [min-value 0] [max-value 100]
+ [callback (λ (slider event)
+ (printf "当前：~a\n" (send slider get-value)))])
+```
+
+`gauge%` 长得像进度条，但它只展示、不接收输入。`range` 定最大值（最小值恒为 0），程序用 `set-value` 推动它。
+
+```racket
+(define progress (new gauge% [parent vp] [label "进度"] [range 100]))
+
+(send progress set-value 40) ;; 填充到 40%
+```
+
+**`gauge%` 没有 `callback`，只能由代码用 `set-value` 推着走。** 记住分工：`slider%` 让用户拖，`gauge%` 让程序报。
+
+## 留一块自己画的区域
+
+内置控件都不够用——画图、做游戏、自定义可视——就开一块 `canvas%` 自己画。`paint-callback` 在每次需要重绘时被调用，参数是画布本身和一个绘图设备 `dc`。
+
+```racket
+(new canvas%
+ [parent vp]
+ [paint-callback
+ (λ (canvas dc)
+ (send dc draw-text "画在这块画布上" 10 10)
+ (send dc draw-rectangle 10 40 80 40))])
+```
+
+`dc` 是个 `dc<%>` 对象，画线、画矩形、写文字、设颜色都靠 `send` 它完成。
+
+**画布自己不存图，每次重绘都从 `paint-callback` 重新画一遍。**
+
+## 菜单与弹窗
+
+菜单挂在 `menu-bar%` 上，菜单栏下是若干个 `menu%`，每个菜单里再放 `menu-item%`。
+
+```racket
+(define bar (new menu-bar% [parent frame]))
+(define file-menu (new menu% [parent bar] [label "文件"]))
+
+(new menu-item%
+ [parent file-menu]
+ [label "退出"]
+ [callback (λ (item event) (exit))])
+```
+
+弹个简单提示用函数 `message-box`，不用自己造对话框；需要自定义弹窗时才上 `dialog%`——它的写法和 `frame%` 一样，只是表现为模态窗口。
+
+```racket
+(message-box "提示" "保存成功") ;; 返回 'ok 之类的符号
+```
+
+## 拼成一个完整小应用
+
+把这些控件凑进一个窗口。下面这段读进来就能跑：填名字、勾订阅、选性别、拖年龄，点提交弹窗回显。
+
+```racket
+#lang racket/gui
+
+(define frame (new frame% [label "控件清单 Demo"] [width 320]))
+(define vp (new vertical-panel% [parent frame] [spacing 8]))
+
+(new message% [parent vp] [label "填写下面信息"])
+
+(define name-field (new text-field% [parent vp] [label "姓名"]))
+(new check-box% [parent vp] [label "订阅通知"] [value #t])
+
+(define gender
+ (new radio-box% [parent vp] [label "性别"] [choices '("男" "女")]))
+
+(new slider% [parent vp] [label "年龄"] [min-value 0] [max-value 120] [init-value 28])
+
+(new button%
+ [parent vp]
+ [label "提交"]
+ [callback
+ (λ (btn evt)
+ (message-box
+ "结果"
+ (format "姓名：~a\n性别：~a"
+ (send name-field get-value)
+ (list-ref '("男" "女") (send gender get-selection))))) ])
+
+(send frame show #t)
+```
+
+跑起来你就有了一个用上输入框、勾选、单选、滑块、按钮和弹窗的完整小应用。
+
+> 控件清单走完一圈。具体界面该挑哪个，去姊妹篇按语义选。

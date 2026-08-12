@@ -1,0 +1,109 @@
+# 写一个迷你解释器——递归遍历语法树
+
+> 一个算术解释器，本质就是一段递归遍历语法树的代码——复合节点递归进去，原子节点直接返回。写出来不到三十行，“求值”这件事就不再神秘。
+
+你在 DrRacket 里敲过 `(+ 1 (* 2 3))`，回车，得到 7。这件事天天发生，但你有没有想过：所谓“求值一个表达式”，到底发生了什么？那串括号是谁看懂的？
+
+答案是直白的： **有人写了一段程序，把那串符号拆成一棵树，然后从树叶往树根算了一遍**。这段程序就叫解释器。多数教程把解释器讲成一堆理论——词法分析、语法分析、抽象语法树——名词一多，神秘感就来了。但剥到最里层，一个能算加减乘除、能判断 if 的解释器，核心逻辑就两条规则。
+
+这篇带你用 Racket 写一个。你会看到：解释器不靠魔法，靠的是你已经会的那个东西——递归。
+
+## 表达式是一棵树
+
+先回到那个 `(+ 1 (* 2 3))`。把它画出来：最外层是加法，左孩子是 `1`，右孩子是另一个乘法；那个乘法的左右孩子是 `2` 和 `3`。这就是一棵树。
+
+求值 `(+ 1 (* 2 3))` 得到 7，本质就是从这棵树的树叶往树根算：先算 `(* 2 3)` 得 6，再把 6 喂给加法的右臂，`(+ 1 6)` 得 7。 **表达式就是树，求值就是走树**——这句话记牢，剩下的都是怎么用代码落实它。
+
+要把这棵树表示成 Racket 里的数据，用 `struct` 最自然：每种表达式一个 `struct`，就是一个树节点的种类。
+
+```racket
+#lang racket
+
+;; AST nodes: one struct per kind of expression.
+(struct num (value) #:transparent) ; a literal number, e.g. 1
+(struct add (l r) #:transparent) ; left + right
+(struct mul (l r) #:transparent) ; left * right
+```
+
+`#:transparent` 让 `struct` 的内容能被看见——你在交互区敲一个节点，它会把结构原样打印出来，而不是藏成一个 `#<num>`。这一点对调试解释器极重要：你能直接盯着自己造的那棵树看。于是 `(+ 1 (* 2 3))` 就成了这样一串数据：
+
+```racket
+(add (num 1) (mul (num 2) (num 3)))
+;; (add (num 1) (mul (num 2) (num 3)))
+```
+
+第一行是你在造这棵树（调用 `add`、`num`、`mul` 这些构造器），第二行是 Racket 把它原样回显——它就是一个由 `struct` 套起来的普通值。这就是抽象语法树（AST）：抽象，因为它剥掉了“怎么写出来”的细节，只留结构；语法树，因为它就是一棵表达语法的树。
+
+![mini-interpreter-fig01](/images/mini-interpreter-fig01.svg)
+
+## eval：递归走完这棵树
+
+树有了，怎么算？观察这棵树的两类节点：`num` 是树叶——一个赤裸的数字，没什么可再算的，它的值就是它自己；`add`、`mul` 是树叉——值依赖于它的孩子，得先把孩子算出来，再加减乘除。
+
+这就是递归的标准形状： **复合节点递归进去，原子节点直接返回**。你处理列表时是这么干的（Racket 编程入门 14：递归——Racket 处理列表与树的方式 讲过同一个套路），处理这棵语法树一模一样，只是节点换成了 `add` 和 `mul`。写出来：
+
+```racket
+;; eval: walk the AST and return its value.
+(define (eval e)
+ (match e
+ [(num v) v] ; atom: a number is its own value
+ [(add l r) (+ (eval l) (eval r))] ; compound: recurse on both sides, then add
+ [(mul l r) (* (eval l) (eval r))])) ; compound: recurse on both sides, then multiply
+```
+
+`match` 按形状拆解：来的是 `num`，就取出里面的数字返回；来的是 `add`，就把左右孩子各递归一遍，再把两个结果加起来。`mul` 同理。跑一下开头那个例子：
+
+```racket
+(eval (add (num 1) (mul (num 2) (num 3))))
+;; 7
+```
+
+手算一遍这条求值路径，确认它确实对。最外层是 `add`，所以先分别求值左臂 `(num 1)` 和右臂 `(mul (num 2) (num 3))`：左臂是 `num`，直接得 1；右臂是 `mul`，再递归求值 `(num 2)` 和 `(num 3)` 得 2 和 3，相乘得 6；最后加法把 1 和 6 加起来，得 7。整个过程没有任何循环、没有栈、没有状态机——整个解释器就是一个递归函数。
+
+## 让分支只走一边
+
+只会加减乘除的解释器太温顺。真正的语言有控制流——条件分支。给它加一个 `if-expr`，再添上布尔字面量和一个比较运算：
+
+```racket
+(struct bool (value) #:transparent) ; a literal boolean
+(struct lt (l r) #:transparent) ; left < right, yields a boolean
+(struct if-expr (cond then else) #:transparent) ; if cond then else
+
+;; extend eval to handle booleans and branching
+(define (eval e)
+ (match e
+ [(num v) v]
+ [(bool b) b] ; atom: a boolean is its own value
+ [(add l r) (+ (eval l) (eval r))]
+ [(mul l r) (* (eval l) (eval r))]
+ [(lt l r) (< (eval l) (eval r))] ; recurse, then compare
+ [(if-expr c t f) (if (eval c) (eval t) (eval f))])) ; only the chosen branch runs
+```
+
+`bool` 和 `num` 一样是原子；`lt` 递归求值两边再比较，产出一个布尔值；`if-expr` 先求值条件，再根据真假选一条分支走。跑几个例子：
+
+```racket
+(eval (if-expr (bool #t) (num 42) (num 0)))
+;; 42
+
+(eval (if-expr (lt (num 3) (num 5)) (num 100) (num 200)))
+;; 100
+```
+
+第一个条件是现成的布尔值 `#t`，所以走 `then` 分支，得 42。第二个条件是 `(< 3 5)`，求值得 `#t`，同样走 `then`，得 100；把条件换成 `(lt (num 9) (num 5))`，求值得 `#f`，就走 `else` 得 200。
+
+这里藏着一个容易被忽略的点。看 `if-expr` 那一行：`(if (eval c) (eval t) (eval f))`。它用的是 Racket 自己的 `if`，而 Racket 的 `if` 是特殊形式，只会求值被选中的那一边。这意味着 **我们的解释器也只走被选中的那条分支**，另一条子树压根不会被遍历。这不是额外写的逻辑，是从 Racket 的 `if` 那里免费继承来的。
+
+这一点之所以重要，是因为它解释了“控制流”的底层：如果被跳过的分支里藏着一个会出错的节点（比如一个未定义的变量），解释器不会碰它，也就不会报错。分支的语义，就这样自然地从“树的形状加递归”里长出来了——你什么特殊机制都没写。
+
+![mini-interpreter-fig02](/images/mini-interpreter-fig02.svg)
+
+## 解释器，就是把树走完
+
+回头看这一趟。你用 `struct` 把 `(+ 1 (* 2 3))` 这样的表达式表示成嵌套的节点——一棵 AST；然后写了一个递归函数 `eval`，用 `match` 按节点种类分发：原子直接返回，复合递归孩子。几十行代码，能算算术，能判断条件，能短路分支。
+
+把它和你已经会的东西连起来。`eval` 的形状——对复合结构递归、对原子直接处理——和处理列表的递归是同一个模子（见 Racket 编程入门 14：递归——Racket 处理列表与树的方式）。而 Racket 的宏，干的也是遍历树这档子事，只不过那棵树是 Racket 代码本身（见 Racket 编程入门 35：宏——让 Racket 语言自己长出来的方式）。 **解释器、递归、宏，底下是同一张图：一棵树，加上一个递归遍历它的函数。**
+
+这个迷你解释器还差两块才算“完整”。一是它不会读文本——你得手写 `(add (num 1) ...)` 来造树，而真正的解释器前面还有一个解析器（parser），负责把 `1 + 2 * 3` 这样的字符串翻译成这棵 AST。二是它没有变量——表达式里写不了 `x`，更没有让 `x` 等于某值的环境。但这两块加进去，骨架还是这一个：解析器产出树，环境给叶子补值，`eval` 依然在中间把树走完。
+
+> 求值，就是把一棵语法树递归地走到底。原子返回自己，复合递归孩子——解释器没有别的秘密。

@@ -1,0 +1,174 @@
+# 三种执行方式——同一份代码为何表现不同
+
+> 同一份 Racket 代码，DrRacket 里能跑、命令行里沉默、REPL 里报 undefined。代码没变，差异从哪来？
+
+你写过 `#lang racket` 的程序。在 DrRacket 里点 Run，函数和变量都摸得到，运行结果立刻可见。把同一个文件拿到命令行 `racket file.rkt`，常常什么也不输出；进 REPL 想调一调，明明定义过的名字却告诉你 undefined。
+
+这不是玄学，是 Racket 的执行模型在起作用：它没有一块万能的全局环境，每段代码都跑在某个命名空间（namespace）里，而不同的启动方式，给你的命名空间完全不同。这篇拆开几种最常见的执行方式，看清楚每一格抽屉里装了什么。
+
+## 同一份代码，三个结果
+
+先把现场摆出来。写一个最简单的模块 `math.rkt`：
+
+```racket
+#lang racket
+(provide square)
+(define (square x) (* x x))
+(define secret 42) ; 没有 provide，按理是私有的
+```
+
+DrRacket 里打开它、点 Run，再到下方的交互区：
+
+```racket
+> (square 5)
+25
+> secret
+42 ; 私有绑定照样摸得到
+```
+
+命令行 `racket math.rkt`，什么也不打印，因为模块只定义、没动作。
+
+终端起一个 `racket` 进 REPL，想用这个模块：
+
+```racket
+> (require "math.rkt")
+> (square 5)
+25
+> secret
+secret: undefined ; require 只把 provide 的搬进来
+```
+
+**同一个 `secret`，DrRacket 看得见，命令行 REPL 看不见。** 差异从哪来？
+
+## 罪魁是命名空间
+
+命名空间是一个一等值，装着“此刻动态求值能用到哪些绑定”。`eval`、REPL 读入的每一行，都拿当前命名空间（`current-namespace`）当上下文。
+
+关键事实是：初始命名空间里装了什么，取决于你怎么启动 Racket。交互式 `racket` 进 REPL 时，初始命名空间预装了 `racket` 的导出；而以模块方式直接跑一个文件时，初始命名空间是空的。
+
+在文件里写一行 `eval` 就能感受到这个落差：
+
+```racket
+#lang racket
+(eval '(cons 1 2)) ; cons: undefined
+```
+
+直接 `racket this.rkt`，报错——因为模块模式下当前命名空间是空的，`eval` 不知道 `cons` 是什么。换个写法，给它一个预装了 `racket/base` 的命名空间，就通了：
+
+```racket
+#lang racket
+(define ns (make-base-namespace))
+(eval '(cons 1 2) ns) ; => '(1 . 2)
+```
+
+**REPL 的初始命名空间预装了 racket 的导出，模块模式下则是空的。** 这一刀，切开了后面所有的差异。
+
+## DrRacket 的 Run：直接钻进模块内部
+
+DrRacket 的 Run 按钮做的事，官方文档说得很直白：它的效果等价于在 REPL 里对定义区那个模块调用 `enter!`。
+
+`enter!` 来自 `racket/enter`（启动库 `racket/init` 已经重新导出它，所以 REPL 里直接能用）。它做两件事：加载模块，然后把当前命名空间整个搬进模块内部。一旦搬进去，你看世界的方式就和模块自己看自己一样——所有绑定，无论有没有 `provide`，都触手可及。
+
+```racket
+> (enter! "math.rkt")
+> secret
+42 ; 进了模块内部，私有绑定也可见
+```
+
+这就是 DrRacket 适合快速探索的原因：你在定义区写什么，交互区就能摸到什么，省去了“哪些导出了”的心智负担。代价是，这种“全可见”是调试特权，不是模块的正常契约。
+
+## REPL 里：require 是门，enter! 是钻进去
+
+同样在 REPL 里，`require` 和 `enter!` 走的是两条路。
+
+`require` 把模块 `provide` 出来的绑定，搬进你当前的命名空间。你的立足点没变，只是手里多了几样别人愿意给你的工具：
+
+```racket
+> (require "math.rkt")
+> (square 5)
+25
+> secret
+secret: undefined ; 私有的，不给
+```
+
+`enter!` 则相反，它不搬工具，而是把你整个人搬进模块的命名空间里：
+
+```racket
+> (enter! "math.rkt")
+> secret
+42
+```
+
+一句话区分两者：**`require` 把别人愿意给你的搬进你的空间，`enter!` 把你整个搬进别人的空间。** 前者尊重模块边界，是写程序的正路；后者穿透边界，是调试和探索的后门。终端 REPL 里也可以用 xrepl 的 `,enter` 命令达到同样效果。
+
+## 命令行：racket file.rkt 只跑模块
+
+`racket file.rkt` 不会起 REPL，它做的是：实例化这个模块，然后，如果模块带有一个 `main` 子模块，把 `main` 也跑掉。仅此而已。
+
+这就解释了开头的沉默：你的模块里只有 `define`，没有任何副作用语句，也没有 `main` 子模块，命令行跑完自然一声不吭。函数定义了，但没人调用它。
+
+让一份代码作为程序在命令行里真正动起来，约定俗成的写法是把执行逻辑放进 `main` 子模块：
+
+```racket
+#lang racket
+(provide square)
+(define (square x) (* x x))
+
+(module+ main
+ (displayln (square 7))) ; racket file.rkt 时才跑
+```
+
+**`racket file.rkt` 跑的是模块本身，外加一个叫 main 的子模块。** 把它 `require` 进别的程序时，`main` 不会跑，这正是 `module+` 的妙处：同一段代码，既是库，又是可执行程序。
+
+顺带一提，`module+ test` 是另一个约定子模块，`raco test file.rkt` 专跑它。还有一个容易混淆的命令 `raco run`，它不是核心自带，而是独立包 `raco-run` 提供的，专门用来跑某个指定子模块并传命令行参数，知道有这东西即可。
+
+## load：被模块遗忘的老路
+
+`load` 是更老的 Scheme 血统。它读文件里的每一个顶层形式，在当前命名空间里逐个求值。听起来像“运行一个文件”，但它走的是顶层语义，不是模块语义。
+
+对一个以 `#lang` 开头的文件 `(load "math.rkt")`，实际发生的只是：这个模块被声明进了命名空间的模块注册表，它的绑定并不会浮到顶层来。想用里面的东西，还得再 `(require "math.rkt")`。
+
+```racket
+> (load "math.rkt") ; 只是声明了模块，绑定没浮上来
+> square
+square: undefined
+> (require "math.rkt") ; 这才会导入
+> (square 5)
+25
+```
+
+**`load` 是顶层的老路，模块只被声明，绑定不会自动浮上来。** 新代码几乎用不到它，只有在写脚本、或刻意想要顶层求值语义（比如用 `racket/load` 这类语言）时才会碰。日常请用 `require`。
+
+## 把代码固化：.zo 与 raco exe
+
+最后两种“执行方式”其实不改变代码怎么跑，而是改变代码以什么形态跑。
+
+`raco make file.rkt` 会把模块编译成字节码，存进旁边的 `compiled/` 目录，文件后缀 `.zo`。下次 `require` 或 `racket file.rkt` 时，默认的加载器只要发现 `.zo` 比源文件新，就自动用字节码替代源文件，启动更快。这套机制对你是透明的，代码的语义、可见性、命名空间一个字都不改，纯粹是速度优化。
+
+```text
+raco make math.rkt # 在 compiled/ 下生成 math_rkt.zo
+racket math.rkt # 自动走 .zo，更快
+```
+
+`raco exe` 则走得更远，把模块连同它依赖的运行时一起塞进一份独立的可执行文件里，拷到没装 Racket 的机器上也能跑：
+
+```text
+raco exe -o greet greet.rkt # 生成 greet（Windows 上是 greet.exe）
+```
+
+`.zo` 缓存只是加速，`raco exe` 才是打包发布。两者都建立在同一个事实上：**`.zo` 只关乎速度、不影响语义，`raco exe` 把代码连同运行时冻成单个可执行文件。**
+
+## 让一份代码在哪都正常
+
+看穿了命名空间，让代码跨环境兼容就成了顺势而为的事：
+
+| 启动方式 | 你脚下的命名空间 | 能看到什么 |
+|---|---|---|
+| DrRacket Run | 模块内部 | 全部绑定（含私有） |
+| `racket file.rkt` | 模块 + `main` 子模块 | 模块自己看到的 |
+| REPL + `require` | 当前命名空间 | 仅 `provide` 的 |
+| REPL + `enter!` | 模块内部 | 全部绑定（调试用） |
+
+几条够用的规矩：库的对外接口只靠 `provide`，不要指望别人能摸到私有绑定；要当程序跑的逻辑放进 `module+ main`，测试放进 `module+ test`；调试时大胆用 `enter!`，发布时别依赖它。
+
+> 同一份代码之所以表现不同，是因为它落脚的命名空间不同。想清楚“我现在站在哪格抽屉里”，几种执行方式的差异就不再是谜。

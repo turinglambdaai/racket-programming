@@ -1,0 +1,179 @@
+# 8 种控件覆盖九成场景——按语义选 Racket GUI 控件
+
+> Racket 的 `racket/gui` 里，九成的界面靠 8 个控件类就搭得起来。选哪个，不取决于它长什么样，取决于用户要对它做什么。
+
+你用 `racket/gui` 写过几个窗口，知道 `frame%`、`panel%`、`button%` 怎么拼到一起。可真要搭一个表单，对着文档里几十个控件类，你反而愣住了：这个输入框，是 `text-field%` 还是别的？几个互斥选项，该摆成 `radio-box%` 还是塞进 `choice%`？想显示进度，`gauge%` 和 `slider%` 到底谁是谁？
+
+让人卡住的，从来不是不会用某个类，而是没想清楚一件事：用户对着这个控件，到底要做什么。
+
+**选哪个控件，取决于用户要对它做什么，不取决于它长什么样。**
+
+把这件事想清楚，控件几乎是自己跳出来的。
+
+## 先问“用户要做什么”
+
+控件不是按长相分类的，是按用户的动作分类的。打开任何一个界面，用户对某一块区域，无非在做下面几件事之一：
+
+- 触发一个动作——“我要做某事”
+- 看一条信息——“我要读，不改”
+- 输入文字——“我要打字”
+- 做一个选择——“我要挑”
+- 看一个进度——“现在到哪了”
+
+每一类意图，`racket/gui` 都有一个控件类去接。下面这 8 个，合起来覆盖绝大多数界面：
+
+| 用户要做什么 | 用哪个控件 | 关键操作 |
+|---|---|---|
+| 触发动作 | `button%` | 回调里写动作 |
+| 看只读信息 | `message%` | `set-label` 换文字 |
+| 输入文字 | `text-field%` | `get-value` 取串 |
+| 二态开关 | `check-box%` | `get-value` 取布尔 |
+| 互斥单选（选项少） | `radio-box%` | `get-selection` 取序号 |
+| 互斥单选（选项多） | `choice%` | `get-string-selection` 取串 |
+| 看进度 | `gauge%` | `set-value` 推进度 |
+| 自绘或富文本 | `canvas%` | `paint-callback` 里画 |
+
+这张表是后面所有内容的索引。下面逐类拆开，每类给一段能跑的代码。
+
+![gui-widget-decision-tree](/images/gui-widget-decision-tree.svg)
+
+## 触发用 button%，展示用 message%
+
+只要用户要做的是“点一下，让程序干件事”，就用 `button%`。它的语义是触发，不是输入：按下时，构造时传入的回调被调用，事件类型是 `'button`。
+
+```racket
+#lang racket/gui
+;; 点按钮弹一个提示框
+(define f (new frame% [label "button% 示例"] [width 240] [height 80]))
+(new button% [parent f]
+ [label "开始"]
+ [callback (λ (b e) (message-box "提示" "开始了"))])
+(send f show #t)
+```
+
+回调 `(λ (b e) ...)` 的两个参数是按钮自身和一个 `control-event%` 事件，绝大多数时候你只关心事件类型，这里就是 `'button`。
+
+反过来，用户只需要看、不需要改的文字或图标，用 `message%`。它是一行静态文本，也可以是位图，或 `'app`、`'caution`、`'stop` 这类内置图标。
+
+```racket
+#lang racket/gui
+;; 按一下按钮，改写 message 的文字
+(define f (new frame% [label "message% 示例"] [width 260] [height 80]))
+(define msg (new message% [parent f] [label "准备就绪"] [auto-resize #t]))
+(new button% [parent f] [label "运行"]
+ [callback (λ (b e) (send msg set-label "正在运行"))])
+(send f show #t)
+```
+
+`message%` 的初始宽度按建时的文字定，事后用 `set-label` 换更长的字会被截断，开了 `auto-resize` 才会跟着撑开。
+
+**想让标签可变，就别忘了 `auto-resize`。**
+
+## 文字输入：text-field% 的单行与多行
+
+`text-field%` 是文本输入的主力。它有单行和多行两种形态，靠 `style` 切换。单行模式下用户按回车会触发一次回调，事件类型是 `'text-field-enter`——这正是“输入框里敲回车就提交”的实现位置。
+
+```racket
+#lang racket/gui
+;; 搜索框：回车才触发
+(define f (new frame% [label "text-field% 示例"] [width 320] [height 80]))
+(new text-field% [parent f] [label "搜索"]
+ [callback (λ (tf e)
+ (when (eq? (send e get-event-type) 'text-field-enter)
+ (printf "搜索：~a\n" (send tf get-value))))])
+(send f show #t)
+```
+
+把 `style` 换成 `'(multiple)`，同一个类就变成带滚动条的多行输入框，“备注”“描述”这类字段足够了。真要做插入图片、自定义格式的富文本编辑，才需要另起一个 `text%` 编辑器、放进 `editor-canvas%`（`canvas%` 的子类）——那是另一章的事。
+
+## 选择类控件：先问能不能多选
+
+选择类控件最容易选错，因为它们长得像。
+
+**能不能同时选多个，是 `check-box%` 与 `radio-box%` 的分水岭。**
+
+可以多选、每项独立开关的，用 `check-box%`。它就是一个二态开关，`get-value` 返回布尔值。
+
+```racket
+#lang racket/gui
+;; 勾选状态实时打印
+(define f (new frame% [label "check-box% 示例"] [width 240] [height 80]))
+(new check-box% [parent f] [label "启用日志"]
+ [callback (λ (cb e) (printf "日志：~a\n" (send cb get-value)))])
+(send f show #t)
+```
+
+只能多选一时，再看选项的多少和可变性：选项少而固定、都要摆出来，用 `radio-box%`（它的选项创建后不能增删）；选项多、或运行时要增删，用 `choice%`（下拉折叠，省地方，且支持 `append`、`delete`）。两者同框对比：
+
+```racket
+#lang racket/gui
+;; radio-box% 选项全摆出来；choice% 折叠成下拉
+(define f (new frame% [label "单选对比"] [width 300] [height 120]))
+(new radio-box% [parent f] [label "对齐"] [style '(horizontal)]
+ [choices '("左" "中" "右")]
+ [callback (λ (rb e) (printf "radio 选第 ~a 项\n" (send rb get-selection)))])
+(new choice% [parent f] [label "字号"]
+ [choices '("小" "中" "大" "特大" "超大")]
+ [callback (λ (c e) (printf "choice 选：~a\n" (send c get-string-selection)))])
+(send f show #t)
+```
+
+一句话：固定少量选项选 `radio-box%`，可变或大量选项选 `choice%`。
+
+## 进度该展示，不是该输入
+
+`gauge%` 是一根进度条，显示一个有界整数（0 到 `range`）的当前值。它最容易被误用，所以单独拎出来讲：它的构造参数里根本没有 `callback`。用户的任何鼠标键盘动作都改不了它，它纯粹是程序向用户输出的指示灯。
+
+```racket
+#lang racket/gui
+;; 每按一次“推进”，进度条 +10
+(define f (new frame% [label "gauge% 示例"] [width 300] [height 80]))
+(define g (new gauge% [parent f] [label "进度"] [range 100]))
+(new button% [parent f] [label "推进"]
+ [callback (λ (b e)
+ (send g set-value (min 100 (+ (send g get-value) 10))))])
+(send f show #t)
+```
+
+**`gauge%` 是给用户看的，不是给用户拖的；想让用户设定数值，那是 `slider%`。** 两者长得像，语义正好相反。
+
+## 装不下的，用 canvas% 画
+
+前面 7 个控件长什么样、怎么交互，都是系统定死的。一旦你要画系统没现成的东西——一条曲线、一个棋盘、一段带格式的长文档——就轮到 `canvas%`。它是一块空白绘制窗口，你拿到它的绘图上下文（DC），自己想画什么画什么。
+
+```racket
+#lang racket/gui
+;; 在画布上画一条线和圆
+(define f (new frame% [label "canvas% 示例"] [width 260] [height 160]))
+(new canvas% [parent f] [style '(border)]
+ [paint-callback
+ (λ (c dc)
+ (send dc set-pen "firebrick" 3 'solid)
+ (send dc draw-line 20 20 220 130)
+ (send dc draw-ellipse 70 30 80 80))])
+(send f show #t)
+```
+
+`paint-callback` 的参数是画布自身和 DC：`(λ (c dc) ...)`，每次需要重绘时被调用。`canvas%` 还有个更常用的子类 `editor-canvas%`——把一个 `text%` 编辑器挂上去，就得到一个完整的富文本编辑视图，这正是 DrRacket 编辑器背后的同一套机制。
+
+## 几条会咬人的暗刃
+
+用熟之前，有几处反直觉的地方会偷偷坑你。
+
+**程序里 `set-value`，不会触发回调。**
+
+`text-field%` 的 `set-value`、`check-box%` 的 `set-value`、`radio-box%` 和 `choice%` 的 `set-selection`，文档里都写明“不调用回调”。你想监听变化，只能在用户触发的回调里读；程序自己改了值，回调一声不吭。
+
+还有三条更短的：
+
+- `radio-box%` 的选项创建后不可变，运行时要增删只能换成 `choice%`。
+- `gauge%` 没有回调、不接收输入；可交互地设定数值是 `slider%`。
+- `message%` 默认按初始文字定宽，换长文字会被截断，需要 `auto-resize`。
+
+把这几条记牢，控件选错的概率会掉一个量级。
+
+## 控件是意图的外壳
+
+回到开头的问题：为什么选控件会让人卡住？因为人在按长相挑，而控件是按意图分的。下次面对一个空白面板，别先想“这里放个什么控件好看”，先问“用户对着这块区域要做什么”——答案一出来，8 个类里自然有一个对上号。
+
+> 界面的复杂度不在控件多，而在意图清不清。把用户的动作想明白，控件自己会就位。

@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Racket 编程',
-  description: '从核心语言到应用开发，全面掌握 Racket 编程。',
+  title: 'Racket 编程入门',
+  description: '从零基础到独立开发应用，全面掌握 Racket 编程。',
 }
 
 export default function RootLayout({

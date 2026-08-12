@@ -13,17 +13,17 @@ export default function HomePage() {
           An Online Book
         </p>
         <h1 className="text-5xl md:text-6xl font-bold text-sand-900 mb-6 tracking-tight">
-          Racket 编程
+          Racket 编程入门
         </h1>
         <p className="text-lg text-sand-600 max-w-xl mx-auto mb-2 leading-relaxed">
-          从核心语言到应用开发，全面掌握 Racket 编程。
+          从零基础到独立开发应用，全面掌握 Racket 编程。
         </p>
         <p className="text-base text-sand-500 mb-10">
           吉人 著
         </p>
         <div className="flex items-center justify-center gap-4">
           <Link
-            href="/book/part-1"
+            href={`/book/${parts[0]?.id ?? 'part-1'}`}
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-sand-900 text-sand-50 rounded-lg text-sm font-medium hover:bg-sand-800 transition-colors"
           >
             开始阅读
@@ -57,7 +57,7 @@ export default function HomePage() {
                   <h3 className="text-xl font-semibold text-sand-900 mb-2">
                     {part.title}
                   </h3>
-                  <p className="text-sm text-sand-600 leading-relaxed">
+                  <p className="text-sm text-sand-600 leading-relaxed line-clamp-2">
                     {part.description}
                   </p>
                 </div>
@@ -71,7 +71,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-sand-200 py-8">
         <p className="text-center text-xs text-sand-500">
-          Racket 编程 · 吉人 · 使用 Next.js 构建
+          Racket 编程入门 · 吉人 · 使用 Next.js 构建
         </p>
         <div className="flex items-center justify-center gap-2 mt-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}

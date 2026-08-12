@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 560" font-family='"PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'>
+  <title>递归：照着树的形状拆</title>
+  <desc>以 tree-sum 为例展示树形递归：一棵多叉树，每个节点的和等于自身值加上所有子节点的和。递归调用顺着树的形状展开，基例是叶子节点。</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4a4a4a"/>
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d97757"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1040" height="560" fill="#f8f6f3"/>
+
+  <!-- Title -->
+  <text x="520" y="42" text-anchor="middle" font-size="20" font-weight="700" fill="#1a1a1a">递归照着树的形状走</text>
+  <line x1="490" y1="54" x2="550" y2="54" stroke="#d97757" stroke-width="3" stroke-linecap="round"/>
+  <text x="520" y="74" text-anchor="middle" font-size="12" fill="#6a6a6a">每个节点的和 = 自身值 + 所有子节点的和 —— 数据是树的形状，处理就跟着是树的形状</text>
+
+  <!-- ===== 左：树结构 + 递归调用展开 ===== -->
+  <text x="290" y="108" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">① 数据：一棵多叉树</text>
+
+  <!-- 根节点 node 1 -->
+  <g>
+    <circle cx="290" cy="150" r="34" fill="#d97757" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="290" y="146" text-anchor="middle" font-size="9" fill="#f8f6f3">node</text>
+    <text x="290" y="163" text-anchor="middle" font-size="18" font-weight="700" fill="#f8f6f3">1</text>
+  </g>
+
+  <!-- 连线到两个子节点 -->
+  <line x1="262" y1="178" x2="180" y2="240" stroke="#4a4a4a" stroke-width="1.5"/>
+  <line x1="318" y1="178" x2="400" y2="240" stroke="#4a4a4a" stroke-width="1.5"/>
+
+  <!-- 子节点 node 2 -->
+  <g>
+    <circle cx="160" cy="270" r="30" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="160" y="267" text-anchor="middle" font-size="9" fill="#2a2a2a">node</text>
+    <text x="160" y="282" text-anchor="middle" font-size="16" font-weight="700" fill="#1a1a1a">2</text>
+    <text x="160" y="320" text-anchor="middle" font-size="9" fill="#6a6a6a">叶子 · children = '()</text>
+  </g>
+
+  <!-- 子节点 node 3 -->
+  <g>
+    <circle cx="420" cy="270" r="30" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="420" y="267" text-anchor="middle" font-size="9" fill="#2a2a2a">node</text>
+    <text x="420" y="282" text-anchor="middle" font-size="16" font-weight="700" fill="#1a1a1a">3</text>
+  </g>
+  <!-- node 3 的子节点 node 4 -->
+  <line x1="420" y1="300" x2="420" y2="358" stroke="#4a4a4a" stroke-width="1.5"/>
+  <g>
+    <circle cx="420" cy="390" r="30" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="420" y="387" text-anchor="middle" font-size="9" fill="#2a2a2a">node</text>
+    <text x="420" y="402" text-anchor="middle" font-size="16" font-weight="700" fill="#1a1a1a">4</text>
+    <text x="420" y="440" text-anchor="middle" font-size="9" fill="#6a6a6a">叶子 · children = '()</text>
+  </g>
+
+  <!-- ===== 中：递归调用展开（右侧） ===== -->
+  <text x="780" y="108" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">② 处理：递归调用顺着形状展开</text>
+
+  <!-- tree-sum 根调用 -->
+  <g>
+    <rect x="680" y="128" width="220" height="44" rx="8" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="790" y="148" text-anchor="middle" font-size="10" fill="#6a6a6a">对根节点调用</text>
+    <text x="790" y="164" text-anchor="middle" font-size="12" font-family="monospace" fill="#1a1a1a">(tree-sum node-1)</text>
+  </g>
+
+  <!-- 分叉到两个子调用 -->
+  <path d="M 760 172 L 760 196 L 700 196 L 700 220" fill="none" stroke="#d97757" stroke-width="1.5" marker-end="url(#arrow-orange)"/>
+  <path d="M 820 172 L 820 196 L 880 196 L 880 220" fill="none" stroke="#d97757" stroke-width="1.5" marker-end="url(#arrow-orange)"/>
+
+  <!-- 子调用 node 2（叶子 → 基例） -->
+  <g>
+    <rect x="600" y="226" width="200" height="44" rx="8" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="700" y="246" text-anchor="middle" font-size="10" fill="#6a6a6a">子节点 · 叶子</text>
+    <text x="700" y="262" text-anchor="middle" font-size="12" font-family="monospace" fill="#1a1a1a">(tree-sum node-2) → 2</text>
+  </g>
+
+  <!-- 子调用 node 3 -->
+  <g>
+    <rect x="780" y="226" width="200" height="44" rx="8" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="880" y="246" text-anchor="middle" font-size="10" fill="#6a6a6a">子节点 · 有子节点</text>
+    <text x="880" y="262" text-anchor="middle" font-size="12" font-family="monospace" fill="#1a1a1a">(tree-sum node-3)</text>
+  </g>
+
+  <!-- node 3 → node 4 -->
+  <path d="M 880 270 L 880 304" fill="none" stroke="#d97757" stroke-width="1.5" marker-end="url(#arrow-orange)"/>
+  <g>
+    <rect x="780" y="310" width="200" height="44" rx="8" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="880" y="330" text-anchor="middle" font-size="10" fill="#6a6a6a">子节点 · 叶子（基例）</text>
+    <text x="880" y="346" text-anchor="middle" font-size="12" font-family="monospace" fill="#1a1a1a">(tree-sum node-4) → 4</text>
+  </g>
+
+  <!-- 汇总向上 -->
+  <path d="M 880 354 C 880 390, 880 390, 880 410" fill="none" stroke="#d97757" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-orange)"/>
+  <text x="950" y="384" font-size="10" fill="#d97757">3 + 4 = 7</text>
+
+  <!-- 最终结果 -->
+  <g>
+    <rect x="660" y="416" width="280" height="56" rx="10" fill="#f4e4c1" stroke="#d97757" stroke-width="2"/>
+    <text x="800" y="438" text-anchor="middle" font-size="10" fill="#6a6a6a">根节点汇总：1 + (2) + (3+4)</text>
+    <text x="800" y="462" text-anchor="middle" font-size="18" font-weight="700" fill="#d97757">= 10</text>
+  </g>
+
+  <!-- 底部洞察 -->
+  <text x="520" y="520" text-anchor="middle" font-size="12" fill="#1a1a1a">递归调用栈与树同构 —— 不用自己管栈或队列，调用栈天然就是遍历树的方式。</text>
+  <text x="520" y="540" text-anchor="middle" font-size="11" font-weight="700" fill="#d97757">把列表看成"首元素 + 剩余"，把树看成"节点 + 子树" —— 顺着形状拆，递归就是最短路径。</text>
+</svg>

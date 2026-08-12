@@ -1,0 +1,178 @@
+# Custodian——Racket 资源的生命周期管家
+
+> Racket 给每份资源配一个 custodian 当管家：管家一关，名下的端口、线程、子管家一并收摊；父管家一断，整条子链级联坍塌。
+
+你写过那种程序吧：打开文件忘了关，连了一堆网络连接没断，起了几个线程没等它们结束就返回了。程序能跑，但句柄在悄悄漏。垃圾回收能回收内存，可你有没有想过：端口、socket、线程这些资源攥着的底层句柄，谁来回收？
+
+多数语言把这事甩给程序员——记得 `close`、记得 `join`、记得在 `finally` 里收拾。Racket 给了另一种答案：给资源配一个管家，管家的开关就是这堆资源的总闸。
+
+## GC 管内存，管不了句柄
+
+先说清为什么需要它。Racket 的垃圾回收器负责回收内存，这件事它做得很好。但端口、TCP 连接、线程这类资源，底层攥着的是操作系统的句柄，GC 看不见也管不着——一个没人引用的端口对象，GC 会回收它在 Racket 里的内存，但底层那个文件描述符仍然开着。
+
+所以传统做法是手动配对：打开了就要关闭，中途抛异常就用 `dynamic-wind` 兜底。代码一长、分支一多、线程一掺和，漏一个就是一个泄漏。 **GC 回收内存，却回收不了句柄。** 这就是 custodian 要补的缺口。
+
+## custodian：给资源配个管家
+
+`make-custodian` 造一个新管家。`current-custodian` 是个参数，决定"接下来新建的资源归谁管"：
+
+```racket
+(define worker-box (make-custodian))
+
+;; 把当前管家临时换成 worker-box，这期间新建的线程归它管
+(parameterize ([current-custodian worker-box])
+ (thread (λ () (sleep 60)))
+ (thread (λ () (sleep 60))))
+
+;; 总闸一拉，worker-box 名下的线程全部终止
+(custodian-shutdown-all worker-box)
+```
+
+`parameterize` 在这块作用域里把 `current-custodian` 换成 `worker-box`，于是期间 `thread` 出来的线程，经理（managing custodian）就是 `worker-box`，不再是默认的根管家。`custodian-shutdown-all` 一调，这些线程全部被杀，名下的端口全部关闭——你不必一个个去记。
+
+## 关一个，塌一串
+
+custodian 真正的杀手锏不是"管一堆资源"，而是"管一堆会连坐的资源"。`make-custodian` 默认把新管家的父亲设成当前管家，于是管家之间形成一棵树：
+
+```racket
+(define root (make-custodian))
+
+;; root 当家时造 child，child 的父亲就是 root
+(define child
+ (parameterize ([current-custodian root])
+ (make-custodian)))
+
+;; child 当家时造线程
+(parameterize ([current-custodian child])
+ (thread (λ () (sleep 100))))
+```
+
+现在关掉 root：
+
+```racket
+(custodian-shutdown-all root)
+;; child 跟着关，child 名下的线程也跟着关
+```
+
+这就是级联关闭：关掉一个父管家，它下面所有子管家、子子管家名下的资源一次性全部回收。 **父 custodian 一关，整条子链跟着塌。** 后面所有用法都建立在这条性质之上。
+
+![custodian-hierarchy-cascade](/images/custodian-hierarchy-cascade.svg)
+
+想确认某个管家是否还活着，用 `custodian-shut-down?`：
+
+```racket
+(custodian-shut-down? child)
+;; #t —— 被父级带垮了
+
+(custodian-shut-down? root)
+;; #t —— 它自己也关了
+```
+
+被级联带关的管家，`custodian-shut-down?` 同样返回 `#t`。一个管家只要还活着，这个谓词就是 `#f`，可以放心往里塞新资源。
+
+## parameterize 划出资源边界
+
+理解了级联，就能用 `parameterize` 给一段逻辑划出干净的资源边界。典型场景：处理一个请求、跑一批数据，期间起的线程、开的端口，都挂在一个临时管家下，逻辑一结束就整体收摊。
+
+```racket
+(define (process-batch data)
+ (define box (make-custodian))
+ (parameterize ([current-custodian box])
+ ;; 这里新建的线程、端口都归 box 管
+ (do-work data))
+ ;; 逻辑一结束就清理
+ (custodian-shutdown-all box))
+```
+
+更稳的写法是把清理放进 `dynamic-wind` 的后置动作，这样无论正常返回还是中途抛异常都会执行：
+
+```racket
+(define (process-batch data)
+ (define box (make-custodian))
+ (dynamic-wind
+ void
+ (λ () (parameterize ([current-custodian box]) (do-work data)))
+ (λ () (custodian-shutdown-all box))))
+```
+
+不必为每一种异常各写一段清理，总闸一拉，全清。这也是 custodian 比手写 `try/finally` 顺手的地方：它按"归属"清理，不按"代码路径"清理。如果你想捕获异常再做点别的事，套一层 `with-handlers` 就行——清理仍然交给 custodian。
+
+## 实战：一个能整体关停的服务组
+
+把前面的东西攒成一个能跑的例子。起两个常驻服务（一个模拟 web 请求处理，一个模拟后台 worker），挂在同一个管家下，需要时一键全停：
+
+```racket
+#lang racket
+
+(define service-box (make-custodian))
+
+(define (run-web) ; 模拟处理 web 请求
+ (let loop () (displayln "web 处理中...") (sleep 2) (loop)))
+
+(define (run-worker) ; 模拟后台 worker
+ (let loop () (displayln "worker 运行中...") (sleep 3) (loop)))
+
+;; 两个服务都挂在 service-box 名下
+(parameterize ([current-custodian service-box])
+ (thread run-web)
+ (thread run-worker))
+
+(sleep 5) ; 让它们跑一会儿
+
+(custodian-shut-down? service-box)
+;; #f —— 还活着
+
+(custodian-shutdown-all service-box)
+;; 一键全停，两个线程立即终止
+```
+
+"停止"就是最后那行 `custodian-shutdown-all`——不必维护一个"活跃线程列表"挨个 `kill-thread`，管家替你记着。
+
+## custodian-managed-list 的第二个参数
+
+想知道一个管家名下到底挂着什么，用 `custodian-managed-list`。这里有个容易踩的坑：它的第二个参数不是资源类型，而是一个上级管家，用来证明你有权查看：
+
+```racket
+(custodian-managed-list service-box (current-custodian))
+;; 列出 service-box 直接管理的资源和子管家
+```
+
+`box` 必须是 `(current-custodian)` 的下级，否则报契约错误——`cust` 要严格从属于 `super`。这个设计是故意的：一个管家只能在被授权的范围内盘点资源，防止子模块偷看兄弟名下的东西。所以 `(custodian-managed-list c 'threads)` 这种写法跑不通，`'threads` 不是管家。 **第二个参数验的是权限，不是类型。**
+
+返回的列表包含直接管理的对象（端口、线程等）和直接子管家。想数其中线程有几个，按类型过滤：
+
+```racket
+(define box (make-custodian))
+(parameterize ([current-custodian box])
+ (thread (λ () (sleep 100)))
+ (thread (λ () (sleep 100))))
+
+(filter thread? (custodian-managed-list box (current-custodian)))
+;; => (#<thread> #<thread>)
+```
+
+如果 `box` 已经被关掉，这个调用直接返回 `'()`，不会再抛错。
+
+## 关闭是强制的，没有协商
+
+`custodian-shutdown-all` 是"拔电源"式的关闭。它不问线程"你忙完了吗"，而是在任意点直接终止——线程可能停在某个调用的中途，文件可能写到一半。 **关闭是拔电源，不是协商。**
+
+所以它最适合的资源是"可丢弃"的：一次请求的连接、一批临时任务、一个插件的运行环境。如果你的线程在做不可中断的事（比如正在写数据库），就该用更软的机制——让线程监听一个通道信号、自己走到安全点再退出，custodian 只兜最后的底。
+
+被关掉的资源也不能再用了。一个已终止的线程，`thread-wait` 它能正常返回（等它结束），但你别指望它还能跑代码。动手前用 `custodian-shut-down?` 探一下，避免对一具尸体操作。
+
+## 一个暗刃：内存算在谁的头上
+
+custodian 还能限额：`custodian-limit-memory` 给管家设一个内存上限，超了就触发 GC，再不行直接关掉它。但这里藏着一把暗刃，和直觉相反——`parameterize` 换的只是"新资源归谁管"，可线程跑起来之后分配的内存，算在管这个线程的管家头上，不是 `parameterize` 里那个新管家：
+
+```racket
+(parameterize ([current-custodian (make-custodian)])
+ (custodian-limit-memory (current-custodian) (* 1024 1024))
+ ;; 这一行 make-bytes 占的内存，算给当前线程的管家
+ ;; 不是上面新建的那个——所以限额没触发，分配照常成功
+ (make-bytes (* 4 1024 1024)))
+```
+
+跑这段代码的是当前线程，它早在 `parameterize` 之前就存在，归原来的管家管。新管家只接手"新建"的资源，接手不了"已经在跑"的线程的内存账。
+
+这意味着你没法靠"在子管家作用域里分配"给一段代码单独设内存预算——真正决定内存归属的，是跑这段代码的线程归谁管。 **custodian 的树管的是"谁负责关"，内存账本走的是另一套。** 等哪天内存限额不生效，你会回来想这一节。

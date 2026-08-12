@@ -1,0 +1,151 @@
+# 打印函数——给人看还是给程序读
+
+> Racket 的打印不是"一个函数加几个变体"，而是三套语义：`display` 给人看，`write` 给程序读，`print` 留给 REPL。选错一套，日志里多几个引号是小事，把机器读的串当成人话贴给用户才是真出事。
+
+你写过 `(display "hello")`，也习惯了在 REPL 里敲一个表达式、回车就看到结果。但你大概也撞到过这种别扭：`display` 出来的字符串没有引号，REPL 里却带着引号；`(list 1 2 3)` 在 REPL 里凭空多出个 `'`。同一个值，换个地方怎么就不一样了？
+
+因为 Racket 根本没有"一个打印函数"。它有三套打印语义，分别服务三种读者。
+
+## 同一个值，三种写法
+
+把字符串 `"a\nb"` 喂给三个函数，看各自吐出什么。注意源码里的 `\n` 在读入时就已经是一个真实的换行符了，不是打印时才解析的：
+
+```racket
+(define s "a\nb")
+
+(display s)
+;; a
+;; b
+
+(write s)
+;; "a\nb"
+
+(print s)
+;; "a\nb"
+```
+
+`display` 把字符串里的字符原样输出，换行就是换行，没有引号。`write` 输出的是一段能被 `read` 重新读回来的 Racket 字面量，所以引号留着、换行还原成 `\n`。`print` 默认和 `write` 长得一样——但只是默认。
+
+再换一个列表，区别就冒出来了：
+
+```racket
+(define lst '(1 2 3))
+
+(display lst) ; (1 2 3)
+(write lst) ; (1 2 3)
+(print lst) ; '(1 2 3)
+```
+
+`print` 给列表前面加了 `'`，另外两个没有。这就是你在 REPL 里看到那个多余引号的来源。
+
+**`display` 吐的是字符，`write` 吐的是能被 `read` 读回来的代码，`print` 是 REPL 自己的那一套。**
+
+## display：把字符原样吐出来
+
+`display` 只服务一种读者：人。它的原则是"字符串、字符这些按字符显示的数据，原样输出"——字符串不加引号，字符不加 `#\` 前缀，换行就是真换行。
+
+```racket
+(display "价格：")
+(display 100)
+;; 价格：100
+```
+
+凡是最终给人看的——CLI 的正常输出、给人读的日志、提示语——都用 `display`，它不会自作主张加引号或转义。
+
+## write：让 read 能把它读回来
+
+`write` 的原则正好相反：输出必须是合法的 Racket 字面量，`read` 读回来要等于原值。所以字符串带引号、特殊字符转义、字符带 `#\` 前缀。
+
+```racket
+(write "a\nb")
+;; "a\nb"
+
+(write #\A)
+;; #\A
+```
+
+**凡是输出给程序读的——存数据到文件再读回来、生成 Racket 代码、序列化——必用 `write`。** 换成 `display` 把这个字符串存进文件，`read` 读回来的就不再是那个字符串，引号和类型信息都丢了。
+
+## print：REPL 那一套，而且没约定
+
+`print` 是三个里最特殊的。官方文档说得很直白：`display` 和 `write` 各有固定输出约定，`print` 没有约定，环境可以随便改它的输出。REPL 就是用 `print` 来显示你求值的每个结果。
+
+`print` 的默认行为接近 `write`，但 Racket 的模块和 REPL 默认开启了 `print-as-expression`：表达式模式下，打印一个值要让它读回来还是那个值。于是列表前面要加 `'`（否则读回来是对 `1` 的调用），符号前面也加 `'`：
+
+```racket
+(print '(1 2 3)) ; '(1 2 3)
+(print 'foo) ; 'foo
+(print "hi") ; "hi"
+```
+
+**你在 REPL 里看到的一切，都是 `print` 的输出，不是 `display` 的。** 这就是为什么 REPL 里的字符串带引号、列表带 `'`——它在帮你保证"这段东西复制回去还能求值成原样"。
+
+"没有固定约定"不是缺陷，是钩子。`global-port-print-handler` 这个参数能整套替换 `print` 的行为。等你做自己的 REPL 或调试器，就站在这把钩子上。
+
+## ln 后缀，以及一个坑
+
+`displayln`、`writeln`、`println` 分别是 `display`/`write`/`print` 加一个换行，仅此而已。但 `println` 有个专门的坑值得点名。
+
+很多语言里 `println("hi")` 输出 `hi` 加换行。Racket 的 `println` 不是——它走的是 `print` 语义，字符串带引号：
+
+```racket
+(displayln "hi") ; hi
+(writeln "hi") ; "hi"
+(println "hi") ; "hi"
+```
+
+官方文档特意说明：`println` 的约定更接近 `write`，不等价于其他语言的 `println`。**想要其他语言那种"原样输出加换行"的行为，用 `displayln`，别用 `println`。**
+
+## printf：把三种语义塞进格式串
+
+`printf` 接受一个格式串和一堆参数，占位符决定每个参数按哪种语义输出：
+
+```racket
+(define name "racket")
+
+(printf "工具：~a~n" name) ; 工具：racket
+(printf "工具：~s~n" name) ; 工具："racket"
+```
+
+同一个字符串，`~a` 出来没引号、`~s` 出来带引号。换给列表，`~v` 还会多吐一个 `'`，因为它跟的是 `print`。完整清单：
+
+- `~a`：`display` 风格，给人看
+- `~s`：`write` 风格，给程序读
+- `~v`：`print` 风格，调试用
+- `~n` 或 `~%`：换行（两者等价）
+- `~~`：字面的波浪号
+
+**`~a`、`~s`、`~v` 不是三个无关的格式符——它们就是 `display`、`write`、`print` 在字符串里的化身。** 在格式串里选错占位符，等于选错了打印函数。
+
+## fprintf、format 和 current-output-port
+
+`printf`、`fprintf`、`format` 是三胞胎，共用同一套占位符，差别只在输出去哪：
+
+```racket
+(printf "~a = ~a~n" "x" 10)
+;; x = 10 直接输出到当前端口
+
+(format "~a = ~a" "x" 10)
+;; "x = 10" 返回字符串，不输出
+
+(fprintf (current-error-port) "警告：~a~n" "出错")
+;; 警告：出错 输出到 stderr
+```
+
+`printf` 本质就是 `(fprintf (current-output-port) ...)`。`current-output-port` 是个参数，`display`、`write`、`print`、`printf` 不指定端口时都往这里写。想把整个程序的输出重定向到文件或字符串，`parameterize` 改它一处就够。
+
+## 怎么选
+
+| 受众 | 函数 | 占位符 |
+|---|---|---|
+| 给人看 | `display` / `displayln` | `~a` |
+| 给程序读（`read` 能还原） | `write` / `writeln` | `~s` |
+| REPL / 调试 | `print` / `println` | `~v` |
+| 拼字符串、不输出 | `format` | `~a` / `~s` / `~v` |
+| 写到指定端口（stderr、文件） | `fprintf` | `~a` / `~s` / `~v` |
+
+下次拿起一个打印函数之前，先回答一个问题：
+
+**这段输出，最终是给人看，还是给程序读？**
+
+答案会直接把你指向上面某一格。

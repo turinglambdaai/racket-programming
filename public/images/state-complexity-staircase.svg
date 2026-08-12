@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 440" font-family='"PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'>
+  <rect width="1000" height="440" fill="#f8f6f3"/>
+
+  <text x="500" y="34" text-anchor="middle" font-size="15" font-weight="600" fill="#1a1a1a">状态复杂性的四级阶梯</text>
+  <text x="500" y="54" text-anchor="middle" font-size="9" fill="#6a6a6a">每级不是新发明，是上一级处理不过来时的升级</text>
+
+  <!-- Step 1: 纯计算 -->
+  <rect x="40" y="240" width="200" height="130" rx="10" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="140" y="268" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a">纯计算</text>
+  <text x="140" y="290" text-anchor="middle" font-size="9" fill="#1a1a1a">无状态</text>
+  <text x="140" y="308" text-anchor="middle" font-size="8" fill="#6a6a6a">输入 → 函数变换 → 输出</text>
+  <text x="140" y="328" text-anchor="middle" font-size="8" fill="#6a6a6a">同样输入永远同样输出</text>
+  <text x="140" y="352" text-anchor="middle" font-size="8" fill="#d97757">卷三</text>
+
+  <!-- Step 2: 命令式 -->
+  <rect x="265" y="200" width="200" height="170" rx="10" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="365" y="228" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a">命令式</text>
+  <text x="365" y="250" text-anchor="middle" font-size="9" fill="#1a1a1a">状态随时间改变</text>
+  <text x="365" y="268" text-anchor="middle" font-size="8" fill="#6a6a6a">几个会变的量</text>
+  <text x="365" y="284" text-anchor="middle" font-size="8" fill="#6a6a6a">set! + 循环 + 条件</text>
+  <text x="365" y="304" text-anchor="middle" font-size="8" fill="#6a6a6a">红绿灯状态机</text>
+  <text x="365" y="328" text-anchor="middle" font-size="8" fill="#6a6a6a">顺序影响结果</text>
+  <text x="365" y="352" text-anchor="middle" font-size="8" fill="#d97757">卷四</text>
+
+  <!-- Step 3: 对象与界面 -->
+  <rect x="490" y="160" width="200" height="210" rx="10" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="590" y="188" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a">对象与界面</text>
+  <text x="590" y="210" text-anchor="middle" font-size="9" fill="#1a1a1a">成组的状态，可见可点</text>
+  <text x="590" y="228" text-anchor="middle" font-size="8" fill="#6a6a6a">类 + 控件 + 事件</text>
+  <text x="590" y="248" text-anchor="middle" font-size="8" fill="#6a6a6a">对象 = 数据 + 行为</text>
+  <text x="590" y="268" text-anchor="middle" font-size="8" fill="#6a6a6a">十几个对象各管各的</text>
+  <text x="590" y="288" text-anchor="middle" font-size="8" fill="#6a6a6a">用户随时点 → 事件 → 改状态</text>
+  <text x="590" y="312" text-anchor="middle" font-size="8" fill="#6a6a6a">命令行 → GUI → Web</text>
+  <text x="590" y="352" text-anchor="middle" font-size="8" fill="#d97757">卷五</text>
+
+  <!-- Step 4: Web -->
+  <rect x="715" y="120" width="200" height="250" rx="10" fill="#e8e6e3" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="815" y="148" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a">Web</text>
+  <text x="815" y="170" text-anchor="middle" font-size="9" fill="#1a1a1a">跨健忘网络延续会话</text>
+  <text x="815" y="188" text-anchor="middle" font-size="8" fill="#6a6a6a">HTTP + 延续 + 数据库</text>
+  <text x="815" y="208" text-anchor="middle" font-size="8" fill="#6a6a6a">协议无状态</text>
+  <text x="815" y="224" text-anchor="middle" font-size="8" fill="#6a6a6a">每次请求都是新的</text>
+  <text x="815" y="244" text-anchor="middle" font-size="8" fill="#6a6a6a">要在无记忆上造出会话</text>
+  <text x="815" y="264" text-anchor="middle" font-size="8" fill="#6a6a6a">cookie · session · 数据库存状态</text>
+  <text x="815" y="284" text-anchor="middle" font-size="8" fill="#6a6a6a">Racket: 延延续管会话</text>
+  <text x="815" y="352" text-anchor="middle" font-size="8" fill="#d97757">卷七</text>
+
+  <!-- ascending arrows between steps -->
+  <path d="M 245 320 L 262 305" fill="none" stroke="#4a4a4a" stroke-width="1.5"/>
+  <path d="M 470 300 L 487 280" fill="none" stroke="#4a4a4a" stroke-width="1.5"/>
+  <path d="M 695 280 L 712 260" fill="none" stroke="#4a4a4a" stroke-width="1.5"/>
+
+  <!-- baseline: kernel unchanged -->
+  <line x1="40" y1="385" x2="915" y2="385" stroke="#d97757" stroke-width="2" stroke-dasharray="6,4"/>
+  <text x="500" y="408" text-anchor="middle" font-size="10" font-weight="600" fill="#d97757">内核不变：用符号和规则描述计算</text>
+  <text x="500" y="425" text-anchor="middle" font-size="8" fill="#6a6a6a">复杂度逐级上升，但内核始终是同一个</text>
+</svg>

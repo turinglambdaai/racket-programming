@@ -1,0 +1,166 @@
+# case-lambda——按参数个数分派一个函数
+
+> 一个函数名，好几种调用形态——Racket 的 `case-lambda` 让你按参数个数分派不同的函数体，把“重载”这件事写进语法里。
+
+你写过那种“参数个数不一样、行为就不一样”的函数。比如一个 `log`：传一个参数就原样打印，传一个格式串加一堆值就按 `printf` 展开。在 Python 或 Java 里，你会用默认参数、可变参数，或者干脆写两个同名重载，然后在函数体里拿 `if` 判断到底传了几个进来。
+
+为什么“按参数个数走不同分支”这么常见的需求，多数语言却只让你在函数体里手动判断？Racket 的回答是把分派做进语法，这个工具叫 `case-lambda`。
+
+## 一个函数，为什么要长出好几种形态
+
+设想你在写一个日志函数。需求很简单：传一个字符串就直接打印，传一个格式串加几个值，就按 `printf` 风格展开。
+
+换作多数主流语言，你大概会这么对付：
+
+```text
+def log(msg_or_fmt, *rest):
+ if len(rest) == 0:
+ print(msg_or_fmt)
+ else:
+ printf(msg_or_fmt, *rest)
+```
+
+能跑，但别扭。问题出在三件事上：
+
+- 参数个数本来是接口的一部分，这里却被埋进了函数体的运行期逻辑
+- 调用方传错个数，得等进到函数里才报错，错误被延后
+- 光看签名，你看不出这个函数到底接受哪几种调用形态
+
+Scheme 和 Racket 的设计取向是另一条路：**如果一个区分是结构性的，就让它体现在语法层面**。于是有了 `case-lambda`。
+
+## case-lambda 的基本语法
+
+`case-lambda` 定义的是“一个函数，但有好几副函数体”，按实参个数挑一副执行：
+
+```racket
+(define greet
+ (case-lambda
+ [(name) (string-append "Hello, " name)]
+ [(given surname) (string-append "Hello, " given " " surname)]))
+```
+
+每一行方括号是一项 `clause`（分支），形参列表和 `lambda` 一样。调用时按个数匹配：
+
+```racket
+(greet "Alice")
+;; "Hello, Alice"
+
+(greet "Ada" "Lovelace")
+;; "Hello, Ada Lovelace"
+
+(greet)
+;; 报错：没有任何 clause 匹配
+```
+
+注意 `greet` 不是可变参数函数。**它是一个参数个数受限、接口清晰的多分支函数**——合法的调用形态，写在定义里一眼可见。
+
+## 只看个数，不看类型
+
+`case-lambda` 的分派规则简单到一句话：
+
+```text
+实参个数 == 某 clause 的形参个数 ? 执行它 : 试下一项
+```
+
+从上到下依次试，第一个匹配的 clause 执行；一个都匹配不上，就抛出参数个数不匹配的错误。
+
+这里有一条硬限制要记住：**`case-lambda` 只按个数分派，不看参数的类型或值**。它做不到“传整数走这条、传字符串走那条”——那是 `match` 或泛型该管的事。同样，clause 里也不能用可选参数和关键字参数（`#:key`），每个分支只能是固定形参，外加一个可选的 rest 参数。
+
+## 可变参数也能混进来
+
+每个 clause 的形参列表，允许带 rest 参数。这就让 `case-lambda` 既能精确匹配，又能兜底“一个或更多”：
+
+```racket
+(define log
+ (case-lambda
+ [(msg) (displayln msg)] ; 精确 1 个参数
+ [(fmt . args) (apply printf fmt args)])) ; 1 个格式串加任意个值
+
+(log "hello")
+;; hello
+
+(log "~a + ~a = ~a" 1 2 3)
+;; 1 + 2 = 3
+```
+
+`(fmt . args)` 是点对形参：`fmt` 接第一个参数，剩下的全收进列表 `args`，再交给 `apply` 展开。实现 `printf` 风格的 API，或者“基础接口加可选高级选项”，这种写法非常顺手。
+
+## 跟手写 case 比一比
+
+不写 `case-lambda`，用普通 `lambda` 配 `case` 也能凑出来：
+
+```racket
+(define f
+ (lambda args
+ (case (length args)
+ [(1) (car args)]
+ [(2) (+ (car args) (cadr args))]
+ [else (error "bad arity")])))
+```
+
+功能上差不多，味道不同：
+
+| | `case-lambda` | 手写 `case` |
+|---|---|---|
+| 参数检查 | 分派时完成 | 进函数体后完成 |
+| 错误信息 | 运行时统一报 arity | 得自己写 |
+| 接口表达 | 声明式，一眼可读 | 隐式，藏在函数体里 |
+| 可优化性 | 编译器更容易内联 | 一般 |
+
+凡是“参数个数不同、语义就不同”的场合，优先用 `case-lambda`——它替你把接口写在了明面上。
+
+## 它和默认参数是什么关系
+
+很多人会问：`case-lambda` 能不能当默认参数用？
+
+能。Racket 的可选参数写法，底层的分派机制和 `case-lambda` 是同一套，都是按参数个数选分支：
+
+```racket
+(define (open-file path [mode 'r])
+ (real-open path mode))
+```
+
+这个 `open-file` 接受 1 个或 2 个参数，少给的那个 `mode` 自动填成 `'r`。想用 `case-lambda` 把同一件事写明白，就这样：
+
+```racket
+(define open-file
+ (case-lambda
+ [(path) (open-file path 'r)] ; 补默认值，委托给两参分支
+ [(path mode) (real-open path mode)]))
+```
+
+单参分支补上默认的 `'r`，再转给双参分支干真正的活。**`case-lambda` 没有默认值语法，每种形态都得手写一遍**——在偏底层、偏库设计的场景里，这种显式反而更受欢迎，因为它把“合法的调用方式”摆在了定义里。
+
+## 契约里也有它的位置
+
+`case-lambda` 的多形态，在 Racket 的契约系统里有专门的表达：`case->` 组合器。一个双形态的函数，契约写成这样：
+
+```racket
+(define report-cost
+ (case-lambda
+ [(lo hi) (format "between $~a and $~a" lo hi)]
+ [(desc) (format "~a of dollars" desc)]))
+
+(provide
+ (contract-out
+ [report-cost
+ (case->
+ (integer? integer? . -> . string?)
+ (string? . -> . string?))]))
+```
+
+文档、契约、实现，三者在“函数形态”上对齐——这正是 Racket 生态一致性的来源：**一个函数长什么样，从签名到实现都讲同一套话**。
+
+## 什么时候别用它
+
+`case-lambda` 不是万能药。下面这几种情况，有更趁手的工具：
+
+- 参数个数相同、只是逻辑分叉——用 `cond` 或 `match`
+- 参数含义相同、只是想让某个参数可选——用默认参数或关键字参数
+- 参数数量完全不固定、语义一致——用普通可变参数，形如 `(lambda args ...)`
+
+一句话的经验法则：**只有当“参数个数本身就是 API 语义的一部分”时，才动用 `case-lambda`**。否则你只是拿一个更重的工具，做默认参数就能做好的事。
+
+> 函数不只有“名字加参数列表”，它是“多种调用形态的集合”。`case-lambda` 把这件事写进语法，让你在设计库、DSL 或公共 API 时，能把接口讲清楚。
+
+顺带一提，`case-lambda` 自己也是宏，编译期就展开成 `lambda` 配参数个数判断——这恰好印证了开篇那句：结构性的区分，Racket 总想把它做进语法。

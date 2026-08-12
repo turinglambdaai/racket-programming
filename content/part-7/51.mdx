@@ -1,0 +1,104 @@
+# Racket 编码规范：提升 Lisp 代码的可维护性实践
+
+> Lisp 的极简语法是双刃剑——没有规范，代码很快变成谁也读不懂的"只写语言"。这篇基于官方风格指南，提炼出可落地的编码规范。
+
+在大型 Racket 项目中，代码风格一致性直接影响团队协作效率和长期维护成本。本文基于官方风格指南，提炼出可落地的工程实践方案。
+
+## 为什么需要编码规范
+
+- **可读性陷阱**：Lisp 家族语言的极简语法既是优势也是挑战，缺乏规范易导致 "Write-Only Code"
+- **协作成本**：团队成员对括号风格、命名习惯的差异会显著增加代码审查负担
+- **维护困境**：6 个月后连作者自己都难以理解没有注释的 `(car (cdr (cdr lst)))` 到底要做什么
+
+## 基础风格约束
+
+### 命名与格式
+
+- 坚持 **kebab-case** 风格：`validate-input` 优于 `validateInput` 或 `validate_input`
+- 缩进对齐原则：
+ ```racket
+ (define (factorial n)
+ (cond [(= n 0) 1]
+ [else (* n (factorial (- n 1)))])) ; 递归情况缩进对齐
+ ```
+- 禁止 Tab 字符，每个缩进层级使用 2 个空格
+
+### 模块化设计
+
+典型模块结构示例：
+```racket
+#lang racket
+
+(require racket/contract
+ rackunit)
+
+(provide (contract-out
+ [string->safe-port-number (-> string? (integer-in 1 65535))]))
+
+;; 将字符串转换为合法的端口号
+(define (string->safe-port-number str)
+ (define port (string->number str))
+ (unless (and (integer? port) (<= 1 port 65535))
+ (error 'invalid-port))
+ port)
+```
+
+## 代码表达最佳实践
+
+### 控制流优化
+
+- 优先选择 `cond` 而非嵌套 `if`：
+ ```racket
+ ;; 反模式
+ (if (positive? x)
+ (if (> x 100)
+ 'large
+ 'small)
+ 'negative)
+
+ ;; 推荐模式
+ (cond [(positive? x) (if (> x 100) 'large 'small)]
+ [else 'negative])
+ ```
+
+### 数据结构选择
+
+- 避免滥用列表，使用 `struct` 定义领域对象：
+ ```racket
+ (struct employee (name id department) #:transparent)
+ (define john (employee "John Doe" 1001 "R&D"))
+ ```
+
+## 文档与测试规范
+
+### 注释层级
+
+- 文件头注释说明模块职责
+- 函数前注释包含：
+ ```racket
+ ;; 计算两个坐标点的欧式距离
+ ;; @param p1 点1 (cons x y)
+ ;; @param p2 点2 (cons x y)
+ ;; @return 两点间的直线距离
+ (define (distance p1 p2) ...)
+ ```
+
+### 测试策略
+
+使用 `rackunit` 的测试模板：
+```racket
+(module+ test
+ (require rackunit)
+ (check-equal? (add1 41) 42)
+ (check-exn exn:fail? (λ () (string->safe-port-number "99999"))))
+```
+
+## 长期维护建议
+
+1. **版本控制**：将规范文档化为 `.editorconfig` 和静态检查规则
+2. **渐进改进**：在新代码中严格执行，旧代码在修改时逐步适配
+3. **工具链支持**：配置 CI 进行自动化风格检查
+
+> 规范的价值不在于约束，而在于让开发者专注于真正重要的逻辑设计。好的 Racket 代码应该像数学证明一样优雅自明。
+
+工程化的工具和规范讲到这里，你已经具备把代码组织好、写整洁的能力。下一篇开始进入应用开发的实战——先从最基础的需求讲起：程序写出来的数据，怎么存下来。

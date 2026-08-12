@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 280" font-family='"PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4a4a4a"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="280" fill="#f8f6f3"/>
+
+  <text x="500" y="34" text-anchor="middle" font-size="15" font-weight="600" fill="#1a1a1a">Racket 项目的五站流程</text>
+
+  <!-- 5 stations -->
+  <rect x="20" y="70" width="170" height="110" rx="10" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="105" y="98" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a">① 探索</text>
+  <text x="105" y="120" text-anchor="middle" font-size="9" fill="#1a1a1a">想法可行吗？</text>
+  <text x="105" y="142" text-anchor="middle" font-size="9" fill="#6a6a6a">REPL 边想边跑</text>
+  <text x="105" y="160" text-anchor="middle" font-size="8" fill="#d97757">read-line · for/list</text>
+
+  <line x1="193" y1="125" x2="217" y2="125" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <rect x="220" y="70" width="170" height="110" rx="10" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="305" y="98" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a">② 组织</text>
+  <text x="305" y="120" text-anchor="middle" font-size="9" fill="#1a1a1a">拆分代码</text>
+  <text x="305" y="142" text-anchor="middle" font-size="9" fill="#6a6a6a">模块系统</text>
+  <text x="305" y="160" text-anchor="middle" font-size="8" fill="#d97757">require · provide</text>
+
+  <line x1="393" y1="125" x2="417" y2="125" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <rect x="420" y="70" width="170" height="110" rx="10" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="505" y="98" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a">③ 验证</text>
+  <text x="505" y="120" text-anchor="middle" font-size="9" fill="#1a1a1a">保证是对的</text>
+  <text x="505" y="142" text-anchor="middle" font-size="9" fill="#6a6a6a">测试与依赖</text>
+  <text x="505" y="160" text-anchor="middle" font-size="8" fill="#d97757">rackunit · raco test</text>
+
+  <line x1="593" y1="125" x2="617" y2="125" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <rect x="620" y="70" width="170" height="110" rx="10" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="705" y="98" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a">④ 打包</text>
+  <text x="705" y="120" text-anchor="middle" font-size="9" fill="#1a1a1a">能装能跑</text>
+  <text x="705" y="142" text-anchor="middle" font-size="9" fill="#6a6a6a">可执行文件/镜像</text>
+  <text x="705" y="160" text-anchor="middle" font-size="8" fill="#d97757">raco exe · Docker</text>
+
+  <line x1="793" y1="125" x2="817" y2="125" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <rect x="820" y="70" width="160" height="110" rx="10" fill="#d97757" stroke="#4a4a4a" stroke-width="1.5" opacity="0.85"/>
+  <text x="900" y="98" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a">⑤ 部署</text>
+  <text x="900" y="120" text-anchor="middle" font-size="9" fill="#1a1a1a">跑起来被用</text>
+  <text x="900" y="142" text-anchor="middle" font-size="9" fill="#6a6a6a">上线</text>
+  <text x="900" y="160" text-anchor="middle" font-size="8" fill="#1a1a1a">Nginx · Docker</text>
+
+  <text x="500" y="230" text-anchor="middle" font-size="9" fill="#6a6a6a">每一站都有趁手的 Racket 工具，没有哪一步需要东拼西凑</text>
+</svg>

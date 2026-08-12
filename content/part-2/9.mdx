@@ -1,0 +1,150 @@
+# 结构体——给数据一个明确的形状
+
+> 列表能装一切，代价是你得记住每个位置代表什么。`struct` 给每个字段一个名字，顺手生成谓词、访问器和不可变性。为什么树、节点、配置这类复合数据，一到 `struct` 手里就突然清楚？
+
+你用列表装过一个树：根在第一个位置，子树挂在后面。取根的值是 `(first 树)`，取左子树是 `(first (rest 树))`——单看这两行，没人知道 `rest` 里到底是子树还是别的。树一深，取一个节点就变成一层套一层的 `first` 和 `rest`，写的人当下懂，三天后连自己都得重新推导一遍。
+
+数据本身没形状，形状只活在脑子里。`struct` 做的事很简单：把脑子里的形状写进代码，再顺手给你生成访问、判断、复制的工具。
+
+## 列表能装一切，代价是你得记位置
+
+嵌套列表表示树，能跑，但每个位置的含义全靠约定：
+
+```racket
+(define tree
+ '(1 (2 (4) (5)) (3 (6) (7))))
+
+(first tree) ; 1，根的值
+(first (rest tree)) ; (2 (4) (5))，左子树
+(first (rest (rest (first (rest tree))))) ; 你猜这行取的是什么
+```
+
+第三行取的是节点 2 的右孩子——但你从代码里看不出来。**位置就是语义，而语义只活在写代码的人脑子里。** 换个人来维护，或者你自己过两周再看，都得重新人肉推导一遍。
+
+## `struct` 给每个字段一个名字
+
+一行 `struct`，把"节点有值和一组子节点"这件事明说出口：
+
+```racket
+(struct node (value children) #:transparent)
+
+(define tree
+ (node 1
+ (list (node 2 (list (node 4 '()) (node 5 '())))
+ (node 3 (list (node 6 '()) (node 7 '()))))))
+
+(node-value tree) ; 1，根的值
+(node-children tree) ; 子节点列表
+(node-value (first (node-children tree))) ; 2，第一个子节点的值
+```
+
+`struct node (value children)` 这一行同时造出了好几样东西：构造器 `node`、谓词 `node?`、两个访问器 `node-value` 和 `node-children`。你不用手写任何一个，它们随定义自动出现。
+
+```racket
+(node? tree) ; #t
+(node? 42) ; #f
+(node-value 42) ; 报错：node-value 期望 node?，给的是 42
+```
+
+类型错了，访问器当场拒绝，不会默默返回一个 `#f` 让你后面调试到怀疑人生。`#:transparent` 让 `node` 能被正常打印和比较——调试时一眼看见字段值，而不是一个冰冷的 `#<node>`。**每读一个字段，名字都在告诉你它是什么。**
+
+## 默认不可变，不是限制是底线
+
+`struct` 生成的字段默认不可变：没有 `set-node-value!` 这种东西。要"改"一个节点，标准做法是 `struct-copy`，它复制旧值、替换你点名的字段，返回一个新节点：
+
+```racket
+(define tree2 (struct-copy node tree [value 99]))
+
+(node-value tree2) ; 99
+(node-value tree) ; 1，原节点纹丝不动
+```
+
+这种"改即复制"的风格让递归和数据共享天然安全——新旧两棵树可以共用同一组子节点，不必整棵拷贝。
+
+真需要原地修改（比如带可变状态的计数器），加 `#:mutable`：
+
+```racket
+(struct counter ([count #:mutable]) #:transparent)
+(define c (counter 0))
+(set-counter-count! c (add1 (counter-count c)))
+(counter-count c) ; 1
+```
+
+`#:mutable` 可以加在单个字段上（只开那一个字段的 setter），也可以加在整个 `struct` 后面（所有字段都可变）。**默认不可变，是 Racket 替你挡掉了一整类"到底是谁改了它"的 bug。**
+
+## `match` 把拆解写进模式
+
+访问器是"取一个字段"，`match` 是"一次性把形状拆开"。两者是搭档：
+
+```racket
+(require racket/match)
+
+(define (tree-sum t)
+ (match t
+ [(node v children)
+ (+ v (apply + (map tree-sum children)))]))
+
+(tree-sum tree)
+;; => 28 1+2+3+4+5+6+7
+```
+
+`[(node v children) ...]` 这一行同时做了三件事：确认这是个 `node`、把值绑定到 `v`、把子节点列表绑定到 `children`。换成访问器写，得 `(if (node? t) (+ (node-value t) ...) ...)`，啰嗦一截。
+
+只关心部分字段时，用 `struct*` 点名要哪几个，其余忽略：
+
+```racket
+(match tree
+ [(struct* node ([value v])) v])
+;; => 1 只取 value，children 连提都不提
+```
+
+`struct*` 像是把字段当具名参数来匹配，比写满下划线的 `(node v _)` 更直白。**`match` 让"拆开看看"从一段过程塌缩成一行模式。**
+
+## 一个结构体可以站在另一个的肩上
+
+`struct` 支持继承：新结构体复用父结构体的字段和访问器。下面的 `book` 自动拥有 `document` 的 `author`、`title`，再加自己的 `publisher`：
+
+```racket
+(struct document (author title) #:transparent)
+(struct book document (publisher) #:transparent)
+
+(define b (book "McCarthy" "Recursive Functions" "MIT Press"))
+
+(document? b) ; #t 子类型也是父类型
+(book? b) ; #t
+(document-author b) ; "McCarthy"，父类访问器照常工作
+(book-publisher b) ; "MIT Press"
+```
+
+谓词是"认识后代"的：`document?` 对 `book` 实例也返回 `#t`。一段既处理 `document` 又处理 `book` 的代码，用 `document?` 一把就抓得住。
+
+更新继承来的字段，`struct-copy` 需要你指明这个字段来自哪个父类型：
+
+```racket
+(struct-copy book b [author "John McCarthy" #:parent document])
+;; => (book "John McCarthy" "Recursive Functions" "MIT Press")
+```
+
+`#:parent document` 告诉 `struct-copy`：`author` 是 `document` 的字段。继承把公共字段抽到上层，子类型只声明自己独有的部分，复用而不重复。
+
+## 非法数据该挡在构造器门外
+
+`struct` 还能配一个 `#:guard` 函数，在构造时校验字段。给前面的 `node` 加一条：`children` 必须是列表。
+
+```racket
+(struct node (value children)
+ #:transparent
+ #:guard (λ (value children name)
+ (unless (list? children)
+ (error name "children 必须是列表，得到：~a" children))
+ (values value children))))
+
+(node 1 (list (node 2 '()))) ; 正常构造
+(node 1 2) ; 报错：children 必须是列表，得到：2
+```
+
+guard 接收所有字段值，外加一个结构体名字（这里绑定到 `name`，可用于错误信息），返回最终存进去的字段值，多个字段用 `values` 返回。非法数据在这里被拦下，根本不会变成一个 `node` 流到程序后面去。**把非法数据挡在构造器门外，比在每个使用点都判一次干净。**
+
+## 结构体是起点，不是终点
+
+`struct` 远不止声明字段。当你需要自定义相等比较、控制打印格式、让节点能被 `for` 直接遍历——这些都不用另起炉灶，而是用 `#:property` 和 `#:methods gen:xxx` 挂到同一个结构体上。形状是地基，能往上盖多少层，看你在它身上挂多少能力。等你遇到"`node` 想当函数用"或者"两个 `node` 什么时候算相等"这类需求，再回头看这两个选项，会发现 `struct` 早就给你留好了接口。

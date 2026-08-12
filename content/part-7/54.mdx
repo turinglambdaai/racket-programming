@@ -1,0 +1,196 @@
+# 深入理解 Racket Web Server 的工作方式
+
+> 写出第一个能跑的 Web Server 后，你会觉得不过如此——但需求稍一增加，问题就来了：连接怎么管、状态怎么存、并发怎么扛。这篇拆解 Web Server 背后真正在发生什么。
+
+当你第一次用 Racket 写出一个能在浏览器中显示内容的程序时，很容易产生一种错觉：Web Server 好像也不过如此。
+
+但随着需求稍微增加，你会立刻遇到一些本质性的问题：
+
+- 返回字符串和返回页面有什么区别？
+- 浏览器为什么能“理解”我返回的内容？
+- 状态码、Header 到底是谁在处理？
+- Racket 的 Web Server 到底抽象到了哪一层？
+
+这篇文章的目标，是在 **不引入前端复杂性的前提下**，帮助你真正理解 Racket Web Server 的工作模型，并学会在不同抽象层次上使用它。
+
+## 一、Web Server 在做的到底是什么？
+
+从最抽象的角度看，Web Server 只做一件事：
+
+```text
+接收请求 → 生成结果 → 返回结果
+```
+
+用函数来表达，就是：
+
+```text
+request → response
+```
+
+Racket 的 Web Server 非常直接地采用了这个模型：
+
+> **你的 Web 程序，本质上就是一个从 request 到 response 的函数。**
+
+## 二、最小可用的 Web 程序
+
+```racket
+#lang racket
+
+(require web-server/servlet
+ web-server/servlet-env)
+
+(define (start request)
+ "Hello, Racket")
+
+(serve/servlet start
+ #:port 8000
+ #:launch-browser? #t)
+```
+
+你只定义了一个函，返回一个字符串，但浏览器却能正确显示内容。
+数
+这说明：
+**Racket 已经帮你完成了一整套 Web 协议层的工作。**
+
+## 三、为什么返回字符串也能工作？
+
+在这个例子中，你并没有显式构造任何 HTTP 数据，但 Racket Web Server 会：
+
+- 自动创建一个 HTTP 响应
+- 使用 `200 OK` 状态码
+- 设置合适的 `Content-Type`
+- 把返回值作为响应体发送给浏览器
+
+这是一个 **为初学者准备的默认行为**，目的是：
+
+> 让你先关注“程序在做什么”，而不是“协议长什么样”。
+
+## 四、Web 返回的不只是“内容”
+
+随着你对 Web 的理解加深，会意识到：
+服务器返回的不只是文本或页面，而是一整套结构化信息，包括：
+
+1. 状态码（是否成功）
+2. 响应头（如何解释内容）
+3. 响应体（真正的数据）
+
+Racket 并没有隐藏这些概念，它只是 **允许你逐步接触它们**。
+
+## 五、显式地构造返回结果
+
+当你希望对返回结果有更明确的控制时，可以直接构造一个响应对象。
+
+```racket
+(require web-server/http)
+
+(define (start request)
+ (response/xexpr
+ '(html
+ (body
+ (h1 "Hello Racket")))))
+```
+
+这里的变化不在于“显示效果”，而在于：
+
+> **你已经明确告诉 Web Server：这是一个完整的 HTTP 响应。**
+
+## 六、状态码：程序语义的一部分
+
+在真正的 Web 应用中，“成功”和“失败”并不是靠字符串说明的，而是靠状态码表达的。
+
+```racket
+(response/xexpr
+ '(p "Page not found")
+ #:code 404)
+```
+
+这一步标志着你开始把 **程序语义** 映射到 **Web 协议语义**。
+
+这是从“写脚本”走向“写服务”的关键分水岭。
+
+## 七、响应头：控制浏览器行为的工具
+
+有些行为无法通过内容本身表达，例如：
+
+- 内容类型
+- 缓存策略
+- 额外的元信息
+
+这些都通过 Header 传递。
+
+```racket
+(response/xexpr
+ '(p "Hello")
+ #:headers
+ (list (header #"X-Demo" #"Racket")))
+```
+
+在 Racket 中，Header 不是字符串拼接，而是 **明确的数据结构**。
+
+## 八、返回不同类型的数据
+
+Web Server 不只服务网页。
+
+### 1 返回纯文本
+
+```racket
+(response/output
+ #:mime-type #"text/plain"
+ (λ (out)
+ (display "plain text" out)))
+```
+
+### 2 返回结构化数据（例如 JSON）
+
+```racket
+(response/output
+ #:mime-type #"application/json"
+ (λ (out)
+ (display "{\"ok\": true}" out)))
+```
+
+Racket 不限制你的返回形式，只要求你 **明确表达意图**。
+
+## 九、Web 程序仍然是“普通程序”
+
+一个非常重要、却容易被忽略的事实是：
+
+> **在 Racket 中，Web 响应是返回值，而不是副作用。**
+
+这意味着你可以像组织普通程序一样组织 Web 逻辑：
+
+```racket
+(define (not-found msg)
+ (response/xexpr
+ `(p ,msg)
+ #:code 404))
+```
+
+Web 开始变得可组合、可抽象、可复用。
+
+## 十、一个合理的学习层次
+
+对初学者来说，一个健康的进阶路径是：
+
+1. 返回字符串，理解整体流程
+2. 使用 xexpr，理解结构化页面
+3. 显式构造响应，理解协议边界
+4. 控制状态码和 Header
+5. 返回不同类型的数据
+
+这不是在“学框架”，而是在 **逐层揭开 Web 的真实结构**。
+
+## 结语
+
+Racket 的 Web Server 并不试图用复杂框架把你包起来。
+它提供的是一种 **逐步深入的模型**：
+
+- 初学时可以忽略协议
+- 进阶时可以精确控制
+- 全程不脱离函数和数据
+
+当你走到这一步，Web 不再是一个陌生领域，
+它只是你熟悉的 Racket 世界，在网络上的一次自然延伸。
+
+接下来，无论你想理解请求结构、表单处理、状态管理，
+你都已经站在一个 **足够稳固的起点** 上了。

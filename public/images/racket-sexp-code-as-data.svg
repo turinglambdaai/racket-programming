@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 560" font-family='"PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'>
+  <title>符号表达式：代码即数据</title>
+  <desc>同一段 (+ 1 2)：不 quote 时作为代码被求值得 3；quote 后作为数据是一个三元素列表，能被 length/first/rest 操作。代码和数据共用同一张括号的皮。</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4a4a4a"/>
+    </marker>
+    <marker id="arrow-both" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d97757"/>
+    </marker>
+    <marker id="arrow-both-start" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M10,0 L0,5 L10,10 z" fill="#d97757"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1040" height="560" fill="#f8f6f3"/>
+
+  <!-- Title -->
+  <text x="520" y="44" text-anchor="middle" font-size="20" font-weight="700" fill="#1a1a1a">符号表达式：代码与数据共用一张皮</text>
+  <line x1="490" y1="56" x2="550" y2="56" stroke="#d97757" stroke-width="3" stroke-linecap="round"/>
+  <text x="520" y="78" text-anchor="middle" font-size="12" fill="#6a6a6a">同一段括号 (+ 1 2)，加不加 '，Racket 看到的是两样东西</text>
+
+  <!-- ===== 顶部中央：同一段括号 ===== -->
+  <g>
+    <rect x="400" y="105" width="240" height="56" rx="10" fill="#d97757" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="520" y="130" text-anchor="middle" font-size="11" font-weight="600" fill="#f8f6f3" letter-spacing="1.5">同一段括号</text>
+    <text x="520" y="151" text-anchor="middle" font-size="17" font-weight="700" fill="#f8f6f3" font-family="monospace">(+ 1 2)</text>
+  </g>
+
+  <!-- 分叉到左（代码）和右（数据） -->
+  <path d="M 460 161 L 460 195 L 220 195 L 220 225" fill="none" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 580 161 L 580 195 L 820 195 L 820 225" fill="none" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="330" y="210" text-anchor="middle" font-size="10" fill="#6a6a6a">不 quote · 直接求值</text>
+  <text x="710" y="210" text-anchor="middle" font-size="10" fill="#6a6a6a">加 ' · 当数据原样返回</text>
+
+  <!-- ===== 左：作为代码 ===== -->
+  <g>
+    <rect x="80" y="230" width="280" height="200" rx="12" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="220" y="256" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a1a" letter-spacing="1">作为代码 · 被求值</text>
+    <line x1="100" y1="266" x2="340" y2="266" stroke="#4a4a4a" stroke-width="0.5" stroke-opacity="0.4"/>
+
+    <text x="220" y="296" text-anchor="middle" font-size="15" font-family="monospace" fill="#1a1a1a">(+ 1 2)</text>
+    <!-- 向下箭头 eval -->
+    <line x1="220" y1="306" x2="220" y2="338" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="270" y="326" font-size="10" fill="#6a6a6a">eval</text>
+    <!-- 结果 -->
+    <rect x="170" y="346" width="100" height="44" rx="8" fill="#f8f6f3" stroke="#d97757" stroke-width="2"/>
+    <text x="220" y="374" text-anchor="middle" font-size="20" font-weight="700" fill="#d97757">3</text>
+    <text x="220" y="412" text-anchor="middle" font-size="10" fill="#6a6a6a">求值结果是一个数</text>
+  </g>
+
+  <!-- ===== 右：作为数据 ===== -->
+  <g>
+    <rect x="680" y="230" width="280" height="200" rx="12" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="820" y="256" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a1a" letter-spacing="1">作为数据 · 一个列表</text>
+    <line x1="700" y1="266" x2="940" y2="266" stroke="#4a4a4a" stroke-width="0.5" stroke-opacity="0.4"/>
+
+    <text x="820" y="296" text-anchor="middle" font-size="15" font-family="monospace" fill="#1a1a1a">'(+ 1 2)</text>
+    <text x="820" y="318" text-anchor="middle" font-size="10" fill="#6a6a6a">长度为 3 的列表，三个元素：</text>
+    <!-- 三个元素 -->
+    <g font-family="monospace" font-size="11" fill="#1a1a1a">
+      <rect x="700" y="328" width="80" height="30" rx="6" fill="#f8f6f3" stroke="#4a4a4a" stroke-width="1"/>
+      <text x="740" y="348" text-anchor="middle">'+</text>
+      <rect x="788" y="328" width="80" height="30" rx="6" fill="#f8f6f3" stroke="#4a4a4a" stroke-width="1"/>
+      <text x="828" y="348" text-anchor="middle">1</text>
+      <rect x="876" y="328" width="80" height="30" rx="6" fill="#f8f6f3" stroke="#4a4a4a" stroke-width="1"/>
+      <text x="916" y="348" text-anchor="middle">2</text>
+    </g>
+    <text x="820" y="378" text-anchor="middle" font-size="10" fill="#6a6a6a">能用 first / rest / length 操作</text>
+    <text x="820" y="396" text-anchor="middle" font-size="10" font-family="monospace" fill="#1a1a1a">(first expr) → '+</text>
+    <text x="820" y="414" text-anchor="middle" font-size="10" font-family="monospace" fill="#1a1a1a">(length expr) → 3</text>
+  </g>
+
+  <!-- ===== 中间双向箭头：同一张皮 ===== -->
+  <line x1="380" y1="320" x2="660" y2="320" stroke="#d97757" stroke-width="2.5" marker-start="url(#arrow-both-start)" marker-end="url(#arrow-both)"/>
+  <rect x="470" y="332" width="100" height="28" rx="6" fill="#f8f6f3" stroke="#d97757" stroke-width="1.5"/>
+  <text x="520" y="350" text-anchor="middle" font-size="11" font-weight="700" fill="#d97757">同一张皮</text>
+
+  <!-- ===== 底部：关键洞察 ===== -->
+  <g>
+    <rect x="80" y="450" width="880" height="90" rx="10" fill="#f8f6f3" stroke="#4a4a4a" stroke-width="1" stroke-opacity="0.4"/>
+    <text x="100" y="478" font-size="12" font-weight="700" fill="#1a1a1a">同像性（homoiconicity）</text>
+    <text x="100" y="500" font-size="11" fill="#1a1a1a">表示程序的数据结构，和程序本身，是同一个东西。所以"写一段改写列表的函数"与"写一段改写代码的宏"，本质是同一件事。</text>
+    <text x="100" y="522" font-size="11" font-weight="700" fill="#d97757">没有翻译层 · 没有 AST 访问者 · 一个 read 把字符串读成代码，一个 eval 把代码跑成结果。</text>
+  </g>
+</svg>

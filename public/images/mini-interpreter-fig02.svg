@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 575" font-family="'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+  <defs>
+    <marker id="arrow-on" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d97757"/>
+    </marker>
+    <marker id="arrow-off" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9a9a9a"/>
+    </marker>
+  </defs>
+
+  <!-- background -->
+  <rect x="0" y="0" width="960" height="575" fill="#f8f6f3"/>
+
+  <!-- title -->
+  <text x="480" y="30" text-anchor="middle" font-size="13" font-weight="600" fill="#1a1a1a">if 表达式的求值过程（短路语义）</text>
+
+  <!-- if-expr node -->
+  <rect x="370" y="52" width="220" height="58" rx="12" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="480" y="76" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a">if 表达式</text>
+  <text x="480" y="95" text-anchor="middle" font-size="9" fill="#6a6a6a" font-family="'JetBrains Mono','Consolas','Courier New',monospace">(if cond then else)</text>
+
+  <!-- edges from if-expr: cond (actual), then (actual), else (skipped) -->
+  <line x1="450" y1="110" x2="190" y2="224" stroke="#d97757" stroke-width="2" marker-end="url(#arrow-on)"/>
+  <line x1="480" y1="110" x2="480" y2="224" stroke="#d97757" stroke-width="2" marker-end="url(#arrow-on)"/>
+  <line x1="510" y1="110" x2="770" y2="224" stroke="#9a9a9a" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#arrow-off)"/>
+
+  <!-- edge labels -->
+  <text x="190" y="216" text-anchor="middle" font-size="9" font-weight="600" fill="#1a1a1a">① 求值 cond</text>
+  <text x="480" y="216" text-anchor="middle" font-size="9" font-weight="600" fill="#1a1a1a">② #t ⇒ then</text>
+  <text x="770" y="216" text-anchor="middle" font-size="9" fill="#6a6a6a">跳过 · 不求值</text>
+
+  <!-- cond subtree (evaluated) -->
+  <rect x="70" y="224" width="240" height="120" rx="12" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="190" y="250" text-anchor="middle" font-size="10" font-weight="600" fill="#1a1a1a">条件子树 cond</text>
+  <text x="190" y="274" text-anchor="middle" font-size="9" fill="#1a1a1a" font-family="'JetBrains Mono','Consolas','Courier New',monospace">(&lt; a 0)</text>
+  <text x="190" y="302" text-anchor="middle" font-size="8" fill="#6a6a6a">求值结果</text>
+  <text x="190" y="328" text-anchor="middle" font-size="13" font-weight="600" fill="#d97757" font-family="'JetBrains Mono','Consolas','Courier New',monospace">#t</text>
+
+  <!-- then branch (evaluated) -->
+  <rect x="360" y="224" width="240" height="120" rx="12" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="480" y="250" text-anchor="middle" font-size="10" font-weight="600" fill="#1a1a1a">then 分支</text>
+  <text x="480" y="274" text-anchor="middle" font-size="9" fill="#1a1a1a" font-family="'JetBrains Mono','Consolas','Courier New',monospace">"negative"</text>
+  <text x="480" y="302" text-anchor="middle" font-size="8" fill="#6a6a6a">求值结果</text>
+  <text x="480" y="328" text-anchor="middle" font-size="12" font-weight="600" fill="#d97757" font-family="'JetBrains Mono','Consolas','Courier New',monospace">"negative"</text>
+
+  <!-- else branch (skipped) -->
+  <rect x="650" y="224" width="240" height="120" rx="12" fill="#e8e6e3" fill-opacity="0.7" stroke="#9a9a9a" stroke-width="1.5" stroke-dasharray="5,4"/>
+  <text x="770" y="250" text-anchor="middle" font-size="10" font-weight="600" fill="#6a6a6a">else 分支</text>
+  <text x="770" y="274" text-anchor="middle" font-size="9" fill="#8a8a8a" font-family="'JetBrains Mono','Consolas','Courier New',monospace">"non-negative"</text>
+  <text x="770" y="302" text-anchor="middle" font-size="8" fill="#8a8a8a">不被求值</text>
+  <text x="770" y="328" text-anchor="middle" font-size="9" fill="#9a9a9a">skipped</text>
+
+  <!-- result edge (actual) -->
+  <line x1="480" y1="344" x2="480" y2="428" stroke="#d97757" stroke-width="2" marker-end="url(#arrow-on)"/>
+  <text x="480" y="388" text-anchor="middle" font-size="9" font-weight="600" fill="#1a1a1a">③ 返回值</text>
+
+  <!-- result node -->
+  <rect x="340" y="428" width="280" height="64" rx="12" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="480" y="452" text-anchor="middle" font-size="9" fill="#6a6a6a">if 表达式的值</text>
+  <text x="480" y="478" text-anchor="middle" font-size="13" font-weight="600" fill="#d97757" font-family="'JetBrains Mono','Consolas','Courier New',monospace">"negative"</text>
+
+  <!-- legend -->
+  <line x1="80" y1="540" x2="116" y2="540" stroke="#d97757" stroke-width="2.5"/>
+  <text x="124" y="540" text-anchor="start" dominant-baseline="middle" font-size="9" fill="#1a1a1a">实际遍历路径（求值）</text>
+  <line x1="360" y1="540" x2="396" y2="540" stroke="#9a9a9a" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <text x="404" y="540" text-anchor="start" dominant-baseline="middle" font-size="9" fill="#1a1a1a">跳过路径（短路 · 不求值）</text>
+</svg>

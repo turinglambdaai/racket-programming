@@ -1,0 +1,210 @@
+# 面向对象——Racket 的 class 与对象
+
+> Racket 用 `(class object% ...)` 定义类，`new` 造对象，`send` 调方法。它是一套独立于函数式的对象系统，专门收拾那些“带着状态、长期存活”的家伙。
+
+你写过 `struct`，把几个字段捆在一起；也写过函数，对数据做一次变换就返回。但有些东西天生不是一次性的数据——一个窗口会显示、会隐藏、会响应点击；一个网络连接会建立、会断开、会重连。它们带着状态，有生命周期，行为还会随状态变化。
+
+这种“有状态、长寿命”的家伙，纯函数式写起来别扭：你得把状态不停传进传出，或者用一堆 `set!` 在闭包里偷偷改。Racket 给了另一套工具来对付它们——类。
+
+## 类是模板，对象是实例
+
+类是创建对象的模板：规定一个对象有哪些字段、支持哪些方法、构造时怎么初始化。对象是根据模板造出来的实例，字段里装着各自的状态，方法操作这些状态。
+
+想象一个 GUI 程序：每个窗口、按钮、文本框都是一个对象，有自己的尺寸、文字、回调，还都能响应事件。
+
+**GUI 是面向对象最典型的应用场景。**
+
+Racket 自带一套 GUI 框架，`frame%`、`button%`、`canvas%` 全是类——这套对象系统，首先是为它们服务的。抛开 GUI，协议解析器、游戏角色、网络连接这些“长期存活、内部多变”的组件，也是类的用武之地。
+
+类系统最核心的就三件事：
+
+1. `class`：定义类
+2. `new`：造对象
+3. `send`：调方法
+
+## 最小的三个动作：class、new、send
+
+定义一个 `person%` 类，它有一个名字字段、一个 `set-name` 方法、一个 `greet` 方法：
+
+```racket
+#lang racket
+(require racket/class)
+
+(define person%
+ (class object%
+ (super-new)
+ (define name "") ; private field
+ (define/public (set-name n)
+ (set! name n))
+ (define/public (greet)
+ (string-append "Hello, I am " name))))
+```
+
+造对象、调方法：
+
+```racket
+(define p (new person%))
+(send p set-name "Racket")
+(send p greet)
+;; "Hello, I am Racket"
+```
+
+几个要点：`object%` 是所有类的根基，自定义类几乎都继承自它；`(super-new)` 在构造时调用父类的初始化，每个类必须调用一次；`define/public` 定义的方法，外部用 `send` 调用。类名末尾的 `%` 是社区约定，看到 `%` 结尾就知道是个类。
+
+## 构造参数与字段：init、init-field、field
+
+类的字段有三种声明方式，区别在于“初始值从哪来”和“外部能不能碰”。
+
+`init-field` 同时声明一个构造参数和一个公有字段，最常用：
+
+```racket
+(define person%
+ (class object%
+ (init-field name age)
+ (super-new)
+ (define/public (info)
+ (format "~a is ~a years old" name age))))
+
+(send (new person% [name "Alice"] [age 18]) info)
+;; "Alice is 18 years old"
+```
+
+`init` 也声明构造参数，但它只是构造时拿来用的临时变量。
+
+**`init` 声明的只是构造参数，方法里访问不到；`init-field` 才是真正的字段。**
+
+官方规则是：只有 `init-field` 声明的初始化变量才能在方法里用，`init` 声明的在方法里引用会直接报错。只想在构造时用一下某个值、不想长期存着，就用 `init`。
+
+`field` 声明一个带默认值的公有字段，不接构造参数：`(field [count 0])`。
+
+三种声明的对外可见性差别如下：
+
+| 声明 | 外部可读 | 外部可写 | 子类可访问 |
+|---|---|---|---|
+| `define`（私有字段） | 否 | 否 | 否 |
+| `field`（公有字段） | 是 | 是 | 是 |
+| `init-field`（公有字段 + 构造参数） | 是 | 是 | 是 |
+
+**`define` 出来的是私有字段，外部读不到也改不了。**
+
+外部读写公有字段用 `get-field` 和 `set-field!`：
+
+```racket
+(define p2 (new person% [name "Bob"] [age 30]))
+(get-field name p2) ;; "Bob"
+(set-field! age p2 31)
+(get-field age p2) ;; 31
+```
+
+子类要用父类的公有字段，还得先用 `inherit-field` 把名字引进作用域——光继承不够，得声明“我要用它”。这点下一节就会遇到。
+
+## 方法的可见性：public 与 private
+
+方法通过 `define/public` 对外公开，外部才能用 `send` 调到；通过 `define/private` 声明的，只在类内部可见，子类既看不到也覆盖不了：
+
+```racket
+(define animal%
+ (class object%
+ (super-new)
+ (define/private (heartbeat)
+ (displayln "heartbeat..."))
+ (define/public (live)
+ (heartbeat)
+ "still alive")))
+
+(send (new animal%) live)
+;; heartbeat...
+;; "still alive"
+```
+
+`heartbeat` 是私有的，外部 `(send 对象 heartbeat)` 会报“没有这个方法”。
+
+这里有个容易踩的坑。
+
+**Racket 的类没有 Java 那种“受保护”的可见性。**
+
+你会在文档里看到 `define/pubment`，名字里的 pub 容易让人望文生义成 protected。它的真身是“公开，且可被子类 augment（增强）”。augment 和 override 方向相反：override 是子类通过 `super` 调父类，augment 是父类通过 `inner` 调子类。这套机制留给需要精细控制扩展方向的高级场景，日常用 `define/public` 配 `define/override` 就够了。
+
+## 继承：override、super、inherit-field
+
+让新类基于旧类扩展，把父类放在 `class` 后面就行。下面定义 `student%` 继承 `person%`，新增一个 `study` 方法。它要用到父类的 `name` 字段，所以先 `inherit-field`：
+
+```racket
+(define student%
+ (class person%
+ (super-new)
+ (inherit-field name) ; bring parent field into scope
+ (define/public (study)
+ (string-append name " is studying"))))
+
+(send (new student% [name "Carol"] [age 20]) study)
+;; "Carol is studying"
+```
+
+注意 `(new student% [name "Carol"] [age 20])` 里，`name` 和 `age` 不是 `student%` 自己声明的，但 Racket 会把它们自动往上传给父类的 `init-field`。
+
+方法也能重写：父类用 `define/public` 定义的 `info`，子类用 `define/override` 覆盖，再用 `(super info)` 调用父类原版：
+
+```racket
+(define student%
+ (class person%
+ (super-new)
+ (define/override (info)
+ (string-append "[Student] " (super info)))))
+
+(send (new student% [name "Dave"] [age 22]) info)
+;; "[Student] Dave is 22 years old"
+```
+
+继承是 Racket GUI 类库的骨架：你自定义一个 `canvas%` 子类，重写它的 `on-event`、`on-paint`，用的就是这套机制。
+
+## 接口：规定要有哪些方法
+
+接口（interface）声明“实现它的类必须提供这些方法”，类似 Java 的接口。用 `interface` 定义，用 `class*` 声明实现：
+
+```racket
+(define IPrintable
+ (interface () print))
+
+(define printer%
+ (class* object% (IPrintable)
+ (super-new)
+ (define/public (print)
+ (displayln "printing..."))))
+
+(send (new printer%) print)
+;; printing...
+```
+
+`class*` 比普通的 `class` 多了一组接口列表。如果类没实现接口里声明的所有方法，定义类时就会直接报错——接口的价值就在这层检查。
+
+## Mixin：给类动态加料
+
+继承是纵向的：子类从一个固定的父类派生。Mixin 给的是横向能力——它是一个“类的函数”，吃进一个类，吐出一个加了新功能的类。Racket 的 `mixin` 形式，两组接口分别是“输入类必须实现什么”和“结果类会实现什么”：
+
+```racket
+(define logging-mixin
+ (mixin () ()
+ (super-new)
+ (define/override (info)
+ (displayln "[LOG] info called")
+ (super info))))
+
+(define logged-person% (logging-mixin person%))
+
+(send (new logged-person% [name "Eve"] [age 40]) info)
+;; [LOG] info called
+;; "Eve is 40 years old"
+```
+
+`logging-mixin` 给任何有 `info` 方法的类套上一层日志：调用时先打印一行，再委托给原方法。当你需要“给一批类统一加个能力”，又不想把它们都挂到同一个父类下，mixin 就派上用场。
+
+![oop-class-inheritance-fig01](/images/oop-class-inheritance-fig01.svg)
+
+## 什么时候该用类
+
+Racket 的函数式是根，类是补充。大部分程序用函数、用 `struct`、用 `match` 就写得很好——输入进去、算个结果出来，没必要包一层对象。
+
+**当一样东西带着状态、长期存活、行为复杂，类就是对的工具。**
+
+GUI 控件、游戏角色、协议解析器、网络连接，都是类的典型住户。Racket 的好处是这两套范式各管一摊，你需要哪个就拿哪个，没人逼你把所有代码都塞进类里。

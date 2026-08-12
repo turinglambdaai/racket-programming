@@ -1,0 +1,283 @@
+# Racket 语言实现剖析
+
+很多语言在介绍时都会强调语法、范式、库生态，但当你真正开始研究一门语言的 **实现本身** 时，关注点会自然转向另一些问题：
+
+> 这门语言的 " 本体 " 是什么？
+> 程序最终跑在什么之上？
+> 编译和运行的边界在哪里？
+
+Racket 是一门 **非常适合从工程层面解剖的语言**，因为它对这些问题的答案并不隐藏，甚至可以说是刻意暴露出来的。
+
+## 一、Racket 不是 " 一个编译器 "，而是一套语言运行系统
+
+从工程上看，Racket 更接近于：
+
+> **一个可扩展的语言平台（language platform）**
+
+而不是：
+
+> " 把源码翻译成机器码的单一编译器 "
+
+Racket 官方发行的内容，大致可以拆成四个层次：
+
+```text
+Racket 语言
+├─ 语言前端（reader / expander / compiler）
+├─ 中间表示与字节码
+├─ Racket 虚拟机（运行时系统）
+└─ 底层宿主（Chez Scheme / C 运行时 / OS）
+```
+
+你研究的 "Racket 本身 "，本质上就是在这四层之间穿行。
+
+## 二、Racket 程序最终编译成了什么？
+
+### 1️⃣ 不是直接的机器码（默认情况）
+
+在默认配置下：
+
+* `.rkt` 源码
+* → 扩展（macro expansion）
+* → 编译为 **Racket 字节码（.zo）**
+* → 由 Racket VM 执行（通过 JIT）
+
+`.zo` 文件就是 Racket 世界里的 " 目标文件 "。
+
+你可以把它理解为：
+
+> 类似 JVM 的 `.class`，或 Python 的 `.pyc`
+
+它不是给人看的，也不是给操作系统直接执行的。
+
+### 2️⃣ `.zo` 里装的是什么？
+
+从工程角度看，`.zo` 里包含：
+
+* 序列化的 AST（已完全展开的 core forms）
+* 模块边界、依赖信息与相位（phase）元数据
+* 闭包、常量、字面量
+* 对运行时原语的引用
+
+**注意关键点：**
+
+> `.zo` 并不是 "S 表达式文本的序列化 "，
+> 而是 **接近运行时的数据结构快照**。
+
+**重要细节：**
+
+* Racket BC（Before Chez）和 Racket CS（Chez Scheme）的 `.zo` 格式 **不兼容**
+* 这也是为什么在切换 Racket 实现时需要重新编译所有依赖
+
+这也是为什么 Racket 的 " 编译 " 和 " 加载 " 界线很模糊。
+
+### 3️⃣ 可以编译成机器码吗？
+
+可以，但不是默认路径。
+
+Racket 支持：
+
+* JIT（Racket CS 通过 Chez Scheme 的 JIT）
+* AOT（raco exe / distribute）
+
+但即使是生成 `.exe` 或原生程序：
+
+> **Racket 程序 ≠ 单独的机器码文件**
+
+而是：
+
+* Racket 程序
+* + Racket 运行时
+* + GC / 调度/异常系统
+* + FFI / IO / 线程
+
+一起被打包。
+
+## 三、Racket 语言本身依赖什么？
+
+这是一个非常好的工程问题。
+
+### 1️⃣ 最底层：两种实现路径
+
+现代 Racket 有 **两个并行维护的实现**：
+
+**Racket CS（Racket on Chez Scheme）**
+* 从 v7.0（2018）开始成为默认实现
+* Racket 将自己的运行时 **移植到** Chez Scheme 之上
+* Chez 提供：高性能 GC、高质量 JIT、底层执行引擎
+
+**Racket BC（Racket Before Chez）**
+* 原始的 C 实现，仍在维护
+* 提供向后兼容和某些平台支持
+
+**关键理解：**
+
+```text
+Chez Scheme：提供"高效的 Scheme 执行引擎"
+Racket：将自己的语言语义完整地实现在 Chez 之上
+```
+
+Racket 并不是 " 基于 Chez 构建 "，而是：
+
+> **把 Chez 当作一个高质量的底层 substrate，
+> 但在其上重写了几乎所有语言层面的东西。**
+
+类比：就像 PyPy 用 RPython 实现 Python，但 Python 语言本身的语义是 PyPy 团队定义的。
+
+### 2️⃣ Racket Runtime（真正的 " 语言引擎 "）
+
+Racket 自己实现了大量运行时组件，包括：
+
+* **模块系统**（Chez 没有 Racket 式的模块）
+* **宏展开器**（expander，支持 syntax objects 和 phase separation）
+* **continuation / 参数化**
+* **异常系统**
+* **合约系统**（contract system）
+* **custodian**（资源管理）
+
+这些并不属于 Scheme 语言规范，而是 Racket 的 " 语言级基础设施 "。
+
+> 所以 Racket 的运行时 **远大于一个解释器**。
+
+### 3️⃣ OS 与 C 层依赖
+
+在最底层，Racket 仍然依赖：
+
+* C 标准库
+* 操作系统 API（文件、线程、socket、时间）
+
+但这些被严格封装在运行时中，**用户层几乎感知不到**。
+
+## 四、Racket 的 " 编译 " 是一条流水线，而不是一步
+
+如果从工程实现的角度抽象，Racket 的编译流程更像这样：
+
+```text
+源码 (.rkt)
+ ↓ reader
+S-expression
+ ↓ expander（在 expansion time 执行宏）
+Fully Expanded Program（无宏的 core forms）
+ ↓ compiler
+Linklet / Bytecode（.zo）
+ ↓ runtime
+执行 / JIT
+```
+
+### 核心特征：
+
+* **宏在 " 扩展期（expansion time）" 执行**，而非传统意义的 " 编译期 "
+* 扩展可能发生在你 `raco make` 时，也可能发生在 `require` 加载模块时
+* **Phase separation**：Racket 的宏系统区分多个执行阶段（phase 0, 1, 2...）
+* 语言本身可以改变编译过程
+* 不存在一个 " 不可修改的语法阶段 "
+
+**Linklet 的引入（Racket CS）：**
+
+在 Racket CS 中，编译器生成的中间形式叫 **linklet**，它是：
+
+* 比传统字节码更高层的抽象
+* 独立可链接的编译单元
+* 支持跨模块优化
+
+这也是为什么在 Racket 中：
+
+> " 语言实现 " 和 " 用户程序 " 之间的界线是模糊的。
+
+## 五、模块是 Racket 工程的基本单位，而不是文件
+
+很多人从表面看 Racket，会以为：
+
+> 一个 `.rkt` 文件 = 一个模块
+
+工程层面并不完全是这样。
+
+在 Racket 内部：
+
+* **模块是语言级对象**（first-class）
+* 文件只是模块的一种承载方式
+* 模块有独立的编译、缓存、版本、加载语义
+* 一个文件可以包含多个子模块（submodule）
+
+这也是为什么：
+
+* `require` 不是文本包含
+* `.zo` 可以被独立缓存
+* raco 能做跨平台分发
+
+如果你要理解 Racket 的工程结构，**模块系统是必读内容**。
+
+## 六、raco：Racket 工程的 " 构建系统 + 包管理器 "
+
+从工程角度，`raco` 承担的角色非常关键：
+
+* 编译模块（生成 `.zo`）
+* 管理包与依赖
+* 构建可分发产物
+* 控制运行时裁剪
+* 运行测试、生成文档
+
+可以说：
+
+> **raco 是 Racket 的工程入口，而不是 REPL。**
+
+当你研究 Racket 的 " 最终产物是什么 " 时，答案几乎总是：
+
+> " 取决于 raco 是如何调用编译与打包流程的。"
+
+## 七、如果你想 " 深入 Racket 工程 "，应该关注什么？
+
+从专家视角给你一个现实的路线图：
+
+### 必须理解的核心概念
+
+1. **宏展开器（expander）+ Syntax Objects**
+   * 语言定义的真正入口
+   * `syntax` 对象携带词法作用域信息
+   * Phase separation（阶段分离）
+
+2. **模块系统**
+   * 工程结构的核心
+   * 模块的实例化与访问控制
+   * Submodule 的用法（如 `test`、`main`）
+
+3. **运行时与字节码 / Linklet**
+   * 程序最终如何存在
+   * Racket CS 的 linklet 是什么
+   * 合约系统的运行时开销
+
+### 进阶主题
+
+* **Phase 系统**：理解 `(require (for-syntax ...))`
+* **Continuation marks**：Racket 的调试和性能分析基础
+* **Custodian**：资源生命周期管理
+
+### 可以暂时忽略的早期误区
+
+* 纠结 " 是不是静态编译语言 "
+* 把 Racket 和 C / Rust 对等比较编译产物
+* 把 `.rkt → exe` 当成核心问题
+
+## 八、一句工程化的总结
+
+如果用一句话描述 Racket：
+
+> **Racket 是一套 " 可被用户扩展的语言实现 "，而不仅是一门语言。**
+
+你写的不只是程序，而是在参与：
+
+* 编译流程
+* 语言语义
+* 运行时构建
+
+这也是为什么，真正理解 Racket 之后，再回头看很多 " 传统语言 " 的工程设计，会觉得它们的边界异常僵硬。
+
+## 附录：关键术语对照
+
+| 术语 | 含义 |
+|------|------|
+| Expansion time | 宏展开发生的时期，可能在编译或加载时 |
+| Phase | 代码执行的阶段层级（0 = 运行期，1 = 宏定义期 ...） |
+| Syntax object | 携带词法信息的 S-expression |
+| Linklet | Racket CS 的可链接编译单元 |
+| Custodian | 管理资源（线程、端口等）生命周期的对象 |
+| Racket BC/CS | Before Chez / Chez Scheme 两种实现 |

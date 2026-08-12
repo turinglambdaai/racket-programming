@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 540" font-family='"PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4a4a4a"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="540" fill="#f8f6f3"/>
+
+  <text x="500" y="36" text-anchor="middle" font-size="15" font-weight="600" fill="#1a1a1a">两种计算模型：殊途同归</text>
+
+  <!-- LEFT: Turing Machine -->
+  <text x="250" y="78" text-anchor="middle" font-size="13" font-weight="600" fill="#1a1a1a">图灵机（1936 · Turing）</text>
+  <text x="250" y="96" text-anchor="middle" font-size="9" fill="#6a6a6a">从"机器"出发</text>
+
+  <rect x="60" y="115" width="380" height="90" rx="12" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="250" y="140" text-anchor="middle" font-size="10" font-weight="600" fill="#1a1a1a">三个部件</text>
+  <text x="250" y="160" text-anchor="middle" font-size="9" fill="#1a1a1a">无限纸带 · 读写头 · 有限状态规则</text>
+  <text x="250" y="180" text-anchor="middle" font-size="8" fill="#6a6a6a">读符号 → 改写 → 移动 → 进入新状态</text>
+  <text x="250" y="196" text-anchor="middle" font-size="8" fill="#6a6a6a">简陋到能造实物，强大到能算一切</text>
+
+  <line x1="250" y1="210" x2="250" y2="235" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="100" y="240" width="300" height="70" rx="10" fill="#e8e6e3" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="250" y="265" text-anchor="middle" font-size="10" font-weight="600" fill="#1a1a1a">长出了硬件与命令式</text>
+  <text x="250" y="285" text-anchor="middle" font-size="9" fill="#1a1a1a">CPU · 内存 · 指令集 · C 语言</text>
+  <text x="250" y="300" text-anchor="middle" font-size="8" fill="#6a6a6a">set! · 循环 · 变量 = 写图灵机的规则</text>
+
+  <line x1="250" y1="315" x2="250" y2="365" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- RIGHT: Lambda Calculus -->
+  <text x="750" y="78" text-anchor="middle" font-size="13" font-weight="600" fill="#1a1a1a">λ 演算（1936 · Church）</text>
+  <text x="750" y="96" text-anchor="middle" font-size="9" fill="#6a6a6a">从"函数"出发</text>
+
+  <rect x="560" y="115" width="380" height="90" rx="12" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="750" y="140" text-anchor="middle" font-size="10" font-weight="600" fill="#1a1a1a">三种表达式</text>
+  <text x="750" y="160" text-anchor="middle" font-size="9" fill="#1a1a1a">变量 x · 函数抽象 λx.M · 函数应用 M N</text>
+  <text x="750" y="180" text-anchor="middle" font-size="8" fill="#6a6a6a">没有数字、布尔、if、循环——只有函数</text>
+  <text x="750" y="196" text-anchor="middle" font-size="8" fill="#6a6a6a">数字和布尔都能用函数造出来</text>
+
+  <line x1="750" y1="210" x2="750" y2="235" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="600" y="240" width="300" height="70" rx="10" fill="#e8e6e3" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="750" y="265" text-anchor="middle" font-size="10" font-weight="600" fill="#1a1a1a">长出了函数式编程</text>
+  <text x="750" y="285" text-anchor="middle" font-size="9" fill="#1a1a1a">Lisp(1958) · Scheme · Haskell · Racket</text>
+  <text x="750" y="300" text-anchor="middle" font-size="8" fill="#6a6a6a">lambda · 一等公民函数 · 递归 = λ 演算的血脉</text>
+
+  <line x1="750" y1="315" x2="750" y2="365" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Convergence -->
+  <path d="M 250 365 L 250 400 L 500 425" fill="none" stroke="#d97757" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M 750 365 L 750 400 L 500 425" fill="none" stroke="#d97757" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="280" y="435" width="440" height="75" rx="12" fill="#f4e4c1" stroke="#d97757" stroke-width="2"/>
+  <text x="500" y="462" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">Church-Turing 论题</text>
+  <text x="500" y="482" text-anchor="middle" font-size="9" fill="#1a1a1a">凡是能被机械地计算的，都能用图灵机算，也都能用 λ 演算表达</text>
+  <text x="500" y="498" text-anchor="middle" font-size="8" fill="#6a6a6a">两种直觉——"可计算"、"图灵可计算"、"λ 可计算"——是同一件事</text>
+</svg>

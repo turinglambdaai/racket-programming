@@ -25,7 +25,7 @@ export default function Sidebar() {
     <aside className="w-64 h-screen sticky top-0 overflow-y-auto border-r border-sand-200 bg-white">
       <div className="p-5 border-b border-sand-200">
         <Link href="/" className="text-sand-900 hover:text-accent-500 transition-colors">
-          <span className="font-bold text-base tracking-tight">Racket 编程</span>
+          <span className="font-bold text-base tracking-tight">Racket 编程入门</span>
         </Link>
       </div>
       <nav className="p-3">

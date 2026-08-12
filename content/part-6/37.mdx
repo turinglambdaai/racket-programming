@@ -1,0 +1,174 @@
+# generator——用延续造出来的迭代器
+
+> Racket 的 generator 是一个能按暂停键的函数：你每叫它一次，它吐一个值，下次从上次停下的地方接着跑。它不是新机制，底下是用延续切开的一次函数调用。
+
+你写过函数，知道一次调用进去、跑完、返回一个值，就结束了。你也用过 `map`、用过 `filter`，知道它们把一整列数据一口气处理完。但有一类问题这两种工具都不顺手——值不是一次到齐的，而是要一个给一个。斐波那契数有无穷个，你只想取前十个；一个大文件，你只想一行行地拿，不想整份塞进内存。怎么让一个函数“算一步、歇一下”，把控制权交还给你，下次再从原地继续？这就是 generator。
+
+## 一个能按暂停键的函数
+
+`generator` 造出来的东西，调用起来像函数，但身体里可以写 `yield`，把控制权交还给调用者：
+
+```racket
+(require racket/generator) ; generator 和 yield 都在这里
+
+(define g
+ (generator ()
+ (yield 'a)
+ (yield 'b)
+ (yield 'c)
+ 'done)) ; body 的最后一行是“返回值”
+
+(g) ; 'a
+(g) ; 'b
+(g) ; 'c
+(g) ; 'done —— body 跑完了
+(g) ; 'done —— 之后再叫，永远还是 'done
+```
+
+第一次 `(g)` 启动 body，跑到第一个 `yield` 就把 `'a` 交出去、按下暂停。第二次 `(g)` 从那个 `yield` 后面继续，跑到下一个 `yield` 再交出 `'b`。每次调用，generator 都从上次停下的精确位置接着跑，局部变量原封不动。
+
+注意末尾那个 `'done`。body 跑完时，最后一个表达式的值会被当作一次隐式的 `yield` 吐出来，之后 generator 进入“死亡”状态。
+
+**body 跑完后，generator 反复返回同一个末值，直到永远。**
+
+这里有个新手必踩的坑：很多人以为 generator 跑完会返回 `eof` 或某种“空”标记。它不会。它返回的就是 body 末值，一遍又一遍。想知道“该停了”，得用后面 `in-generator` 或 `generator-state` 的办法。
+
+## 斐波那契：一个无穷的迭代器
+
+generator 真正的威力在“无穷”上。斐波那契数列没有尽头，但你用一个 generator 把它装起来，就只用算你实际取的那些：
+
+```racket
+(define fib
+ (generator ()
+ (let loop ([a 0] [b 1])
+ (yield a)
+ (loop b (+ a b))))) ; 递归 loop，永不返回
+
+(for/list ([_ (in-range 10)])
+ (fib))
+; '(0 1 1 2 3 5 8 13 21 34)
+```
+
+`loop` 一直递归，body 永远跑不到头，所以 generator 不会“死”。你取十个它就算十个的步数，取一万个就算一万个。
+
+**generator 把“无穷”翻译成了“你要多少有多少”。**
+
+这和惰性求值的 stream 像一对表亲。区别在于：stream 是数据结构（一个值挂着一个“算下一个”的承诺），generator 是控制流（一段会暂停的代码）。如果你的“下一个值”来自一段过程——读文件、跑模拟、解析 token——generator 写起来比 stream 直白。
+
+## in-generator：让生成器融进 for 循环
+
+手动一次次 `(g)`，你得自己判断什么时候停。那个反复返回的末值是个麻烦：你分不清它是 generator 真吐出来的，还是“已经跑完了又吐一遍”。
+
+Racket 给了干净的做法：`in-generator`。它把一段带 `yield` 的 body 包成一个 sequence，自动丢掉那个多余的末值，正好在 body 跑完时收尾：
+
+```racket
+(for/list ([x (in-generator
+ (yield 1)
+ (yield 2)
+ (yield 3))])
+ x)
+; '(1 2 3)
+```
+
+没有末值污染，没有多余的 `#<void>`，body 一跑完 sequence 就结束。
+
+**`in-generator` 是 generator 配 `for` 的标配写法，能用它就别手动调用。**
+
+如果你手上已经有一个 generator 过程（不是 body），想喂给 `for`，用 `in-producer` 配一个明确的停止值：
+
+```racket
+(define abc
+ (generator ()
+ (for ([x '(a b c)])
+ (yield x))))
+
+(for/list ([x (in-producer abc (void))])
+ x)
+; '(a b c)
+```
+
+把 `(void)` 当停止信号——前提是你知道这个 generator 跑完会返回 `(void)`。这种写法不如 `in-generator` 安全，仅在你没法改写 body 时用。
+
+## yield 不光能吐，还能吃
+
+普通的 `yield` 像单向门：generator 往外吐值。但 `yield` 本身是个表达式，它求值的结果，是下一次调用 generator 时传进来的参数。
+
+```racket
+(define echo
+ (generator ()
+ (define a (yield 1)) ; 吐 1；下次调用传进来的值 → a
+ (define b (yield (add1 a))) ; 吐 a+1；下次调用传进来的值 → b
+ (yield (+ a b)))) ; 吐 a+b
+
+(echo) ; 1
+(echo 10) ; a=10，吐 11
+(echo 100) ; b=100，吐 110
+```
+
+第一次 `(echo)` 启动，`(yield 1)` 把 `1` 交出去并暂停。第二次 `(echo 10)`，那个 `(yield 1)` 求值成 `10`，赋给 `a`，body 继续跑到下一个 `yield` 吐出 `11`。调用者往里塞的值，generator 接得住。
+
+这就让 generator 从“只能输出的迭代器”升级成了“和调用者一来一回的对话通道”——这正是协程的雏形。
+
+## 怎么知道它跑完了
+
+`generator-state` 返回 generator 当前所处的状态：
+
+```racket
+(define g (generator () (yield 1) (yield 2)))
+
+(generator-state g) ; 'fresh 刚造好，一次都没叫
+(g) ; 1
+(generator-state g) ; 'suspended 停在某个 yield 上
+(g) ; 2
+(g) ; body 跑完，吐末值
+(generator-state g) ; 'done 再叫也只会返回同一个末值
+```
+
+四个状态：`'fresh`（没叫过）、`'suspended`（停在 `yield` 上，还能继续）、`'running`（正在跑）、`'done`（跑完了）。手动驱动 generator 时，查一下是不是 `'done` 是唯一可靠的终止判断，比猜末值稳得多。
+
+## 它是怎么造出来的：延续
+
+写到这里，`yield` 能“按下暂停、原位恢复”这件事仍然像个魔法。它不是。打开 `racket/generator` 的源码，`yield` 的核心就这几行（简化过，省去错误检查）：
+
+```racket
+(define (yield . vs)
+ (call-with-composable-continuation
+ (lambda (k) ; k = “从 yield 之后接着往下跑”的延续
+ (suspended-generator! self k) ; 把延续存进当前 generator
+ (apply abort-current-continuation yield-tag vs)) ; 带着值跳回调用者
+ yield-tag))
+```
+
+`yield` 干的事，是把自己的延续——“从 yield 往后那段剩余计算”——抓下来存好，然后带着值跳回调用者。下次再调用 generator，就是把存好的那个延续丢回去跑，跑到下一个 `yield` 再抓一次。
+
+那个 `yield-tag` 是一个延续提示（continuation prompt），`abort-current-continuation` 跨过提示跳回去，`call-with-composable-continuation` 抓住可复用的延续——这几样就是延续的全部零件。
+
+**generator 不是语言新加的魔法，它是延续的一层包装。**
+
+延续本身是一门大功课，三言两语讲不透，这里只点破这层窗户纸：你写的每一个 `yield`，底下都是一次延续的捕获与恢复。想把这套机制彻底吃透——`call/cc`、delimited continuation、prompt——去看 延续入门，那是这一篇的姊妹篇。
+
+## 真正的协程：thread 加 channel
+
+generator 是一种“半协程”：只有调用者和它两个角色，控制权在两者间一来一回，generator 没法随便把控制权让给别的 generator。它够用来造迭代器、写状态机、做按需生产，但造不出“多个对等伙伴互相让出执行权”的那种协程。
+
+那种要 Racket 的 `thread`。Racket 的 thread 是用户态绿色线程，官方文档直接叫它 coroutine thread——轻量、由运行时调度。两个 thread 之间用一个同步 channel 传值，发送和接收都会等对手，就构成了两个对等协程的握手：
+
+```racket
+(define ch (make-channel))
+
+(thread (lambda ()
+ (channel-put ch "hello") ; 发，等对方收
+ (channel-put ch (string-append (channel-get ch) "!")))) ; 收，加工，再发
+
+(channel-get ch) ; "hello"
+(channel-put ch "world") ; "world"
+(channel-get ch) ; "world!"
+```
+
+generator 用 `yield` 暂停，thread 用 channel 阻塞；generator 是一对一的对话，thread 是多对多的协作。
+
+**要造迭代器用 generator，要造会互相通信的并发单元用 thread 加 channel。**
+
+两者路子不同——一个用延续切片，一个用通道阻塞——但解决的是同一个问题：怎么让一段计算在必要的时候停住、把执行权让出来。
+
+> 一个函数能暂停、能恢复，就不再是一次性计算。generator 把“函数调用”切成了一段段可以反复进入的代码，而这一切的底层，就是延续。

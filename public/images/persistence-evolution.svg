@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 280" font-family='"PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4a4a4a"/>
+    </marker>
+  </defs>
+  <rect width="900" height="280" fill="#f8f6f3"/>
+
+  <text x="450" y="34" text-anchor="middle" font-size="15" font-weight="600" fill="#1a1a1a">三种持久化方式的演进</text>
+  <text x="450" y="54" text-anchor="middle" font-size="9" fill="#6a6a6a">需求驱动、逐步升级的单行道</text>
+
+  <!-- File -->
+  <rect x="40" y="90" width="240" height="120" rx="10" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="160" y="118" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">文件</text>
+  <text x="160" y="140" text-anchor="middle" font-size="9" fill="#1a1a1a">(define data ...)</text>
+  <text x="160" y="160" text-anchor="middle" font-size="9" fill="#6a6a6a">能存能取，但不会自己找</text>
+  <text x="160" y="180" text-anchor="middle" font-size="8" fill="#6a6a6a">write/read 序列化</text>
+  <text x="160" y="198" text-anchor="middle" font-size="8" fill="#d97757">数据量小、结构简单时完美</text>
+
+  <line x1="283" y1="150" x2="307" y2="150" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#ar)"/>
+  <text x="295" y="142" text-anchor="middle" font-size="7" fill="#6a6a6a">想查询</text>
+
+  <!-- SQLite -->
+  <rect x="310" y="90" width="240" height="120" rx="10" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="430" y="118" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">SQLite</text>
+  <text x="430" y="140" text-anchor="middle" font-size="9" fill="#1a1a1a">(define/query data ...)</text>
+  <text x="430" y="160" text-anchor="middle" font-size="9" fill="#6a6a6a">带查询能力的结构化文件</text>
+  <text x="430" y="180" text-anchor="middle" font-size="8" fill="#6a6a6a">不用装服务，打开 .db 文件</text>
+  <text x="430" y="198" text-anchor="middle" font-size="8" fill="#d97757">入门应用的最佳起点</text>
+
+  <line x1="553" y1="150" x2="577" y2="150" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#ar)"/>
+  <text x="565" y="142" text-anchor="middle" font-size="7" fill="#6a6a6a">高并发</text>
+
+  <!-- Server DB -->
+  <rect x="580" y="90" width="240" height="120" rx="10" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="700" y="118" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">服务型数据库</text>
+  <text x="700" y="140" text-anchor="middle" font-size="9" fill="#1a1a1a">(define data elsewhere ...)</text>
+  <text x="700" y="160" text-anchor="middle" font-size="9" fill="#6a6a6a">独立常驻，程序之外</text>
+  <text x="700" y="180" text-anchor="middle" font-size="8" fill="#6a6a6a">PostgreSQL · MySQL</text>
+  <text x="700" y="198" text-anchor="middle" font-size="8" fill="#d97757">项目长大了才考虑</text>
+
+  <text x="450" y="248" text-anchor="middle" font-size="9" fill="#6a6a6a">先用最简单够用的，等它真痛了再换——这本身就是工程判断</text>
+</svg>

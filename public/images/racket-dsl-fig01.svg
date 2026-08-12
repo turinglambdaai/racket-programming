@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 480" font-family='"PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4a4a4a"/>
+    </marker>
+  </defs>
+
+  <!-- background -->
+  <rect x="0" y="0" width="1000" height="480" fill="#f8f6f3"/>
+
+  <!-- title -->
+  <text x="500" y="44" text-anchor="middle" font-size="14" font-weight="600" fill="#1a1a1a">MiniDraw 源码 → 解析树</text>
+  <text x="500" y="66" text-anchor="middle" font-size="9" fill="#6a6a6a">S-expr 源码被解析为树形调用结构</text>
+
+  <!-- source code panel -->
+  <rect x="46" y="120" width="300" height="210" rx="12" fill="#e8e6e3" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="196" y="148" text-anchor="middle" font-size="9" fill="#6a6a6a">MiniDraw 源码</text>
+  <text x="196" y="184" text-anchor="middle" font-size="12" font-family='ui-monospace, "Cascadia Code", Consolas, monospace' fill="#1a1a1a">(draw</text>
+  <text x="196" y="206" text-anchor="middle" font-size="12" font-family='ui-monospace, "Cascadia Code", Consolas, monospace' fill="#1a1a1a">(set-color "red")</text>
+  <text x="196" y="228" text-anchor="middle" font-size="12" font-family='ui-monospace, "Cascadia Code", Consolas, monospace' fill="#1a1a1a">(move 10 20)</text>
+  <text x="196" y="250" text-anchor="middle" font-size="12" font-family='ui-monospace, "Cascadia Code", Consolas, monospace' fill="#1a1a1a">(line-to 30 40))</text>
+  <text x="196" y="306" text-anchor="middle" font-size="8" fill="#6a6a6a">括号嵌套 = 树的父子关系</text>
+
+  <!-- parse arrow: source -> draw root -->
+  <line x1="346" y1="225" x2="612" y2="225" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="479" y="217" text-anchor="middle" font-size="9" fill="#6a6a6a">解析 parse</text>
+
+  <!-- draw root node -->
+  <rect x="615" y="202" width="110" height="46" rx="12" fill="#d97757" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="670" y="231" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1a1a">draw</text>
+
+  <!-- tree wires: trunk + bus + three drops -->
+  <line x1="670" y1="248" x2="670" y2="320" stroke="#4a4a4a" stroke-width="1.5"/>
+  <line x1="490" y1="320" x2="850" y2="320" stroke="#4a4a4a" stroke-width="1.5"/>
+  <line x1="490" y1="320" x2="490" y2="380" stroke="#4a4a4a" stroke-width="1.5"/>
+  <line x1="670" y1="320" x2="670" y2="380" stroke="#4a4a4a" stroke-width="1.5"/>
+  <line x1="850" y1="320" x2="850" y2="380" stroke="#4a4a4a" stroke-width="1.5"/>
+
+  <!-- child: set-color -->
+  <rect x="415" y="380" width="150" height="66" rx="12" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="490" y="408" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a">set-color</text>
+  <text x="490" y="430" text-anchor="middle" font-size="10" font-family='ui-monospace, "Cascadia Code", Consolas, monospace' fill="#6a6a6a">"red"</text>
+
+  <!-- child: move -->
+  <rect x="595" y="380" width="150" height="66" rx="12" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="670" y="408" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a">move</text>
+  <text x="670" y="430" text-anchor="middle" font-size="10" font-family='ui-monospace, "Cascadia Code", Consolas, monospace' fill="#6a6a6a">10 20</text>
+
+  <!-- child: line-to -->
+  <rect x="775" y="380" width="150" height="66" rx="12" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+  <text x="850" y="408" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a">line-to</text>
+  <text x="850" y="430" text-anchor="middle" font-size="10" font-family='ui-monospace, "Cascadia Code", Consolas, monospace' fill="#6a6a6a">30 40</text>
+</svg>

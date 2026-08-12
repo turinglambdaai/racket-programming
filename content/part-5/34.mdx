@@ -1,0 +1,207 @@
+# GUI 不卡顿——把耗时任务挪到后台线程
+
+> 点按钮卡死窗口，多半不是 Racket 慢，而是耗时任务跑错了线程——挪到后台线程，再用 `queue-callback` 或 `channel` 把结果递回去，窗口就不卡了。
+
+你写过带界面的程序，知道按钮一点就该有反应。你也写过耗时的活儿——读文件、跑计算、等网络。把这两件事塞进同一个按钮回调，窗口就僵住了：按钮按下去不回弹，拖动边框没反应，连关闭都点不动。
+
+为什么界面这么脆弱？因为 GUI 程序天生靠一条事件循环活着。
+
+## 卡顿的根源：事件循环只有一条道
+
+Racket 的 GUI 把所有事件——鼠标点击、键盘输入、窗口重绘、按钮回调——排成一队，交给一条 handler 线程（事件派发线程）一个一个处理。前一个回调没返回，后一个事件就进不来。
+
+官方文档用这样一个按钮演示卡顿：回调里只做一件事，`sleep` 五秒。
+
+```racket
+#lang racket/gui
+
+(define frame (new frame% [label "卡顿演示"] [width 300] [height 80]))
+(define msg (new message% [parent frame] [label "就绪"] [auto-resize #t]))
+
+(new button%
+ [parent frame]
+ [label "暂停"]
+ [callback (λ (button event)
+ (sleep 5) ; 整个窗口定住 5 秒
+ (send msg set-label "恢复"))])
+
+(send frame show #t)
+```
+
+点一下，整个窗口死 5 秒。`sleep` 把 handler 线程占住了，事件队列堵成一团。换成真正的耗时计算——解析 JSON、跑算法、拉网络——效果一样：GUI 假死。
+
+**handler 线程在跑你的回调时，不会再派发任何事件——窗口就定在那里。** 所以规矩只有一条：回调里别干重活。
+
+## 把耗时任务扔进新线程
+
+解法是把重活从回调里搬出去。`thread` 接一个无参函数（thunk），开一条新线程跑它，自己立刻返回。回调瞬间结束，handler 线程马上空出来去派发下一个事件。
+
+```racket
+#lang racket/gui
+
+(define frame (new frame% [label "后台线程"] [width 300] [height 80]))
+(define msg (new message% [parent frame] [label "就绪"] [auto-resize #t]))
+
+(new button%
+ [parent frame]
+ [label "开始"]
+ [callback
+ (λ (button event)
+ (send msg set-label "计算中…")
+ (thread ; 开后台线程跑重活，回调立即返回
+ (λ ()
+ (sleep 3) ; 模拟耗时计算
+ (send msg set-label "完成"))))]) ; ← 这里藏着一个坑
+
+(send frame show #t)
+```
+
+窗口不卡了。但代码里埋了个坑：后台线程直接调了 `(send msg set-label ...)`。
+
+## 回到主线程：queue-callback
+
+后台线程到底能不能碰 GUI？技术上能——GUI 对象是线程安全的，跨线程调用不会崩。但你的后台线程和 handler 线程上的回调可能同时改同一个控件，状态会打架，调试起来一头雾水。所以官方的规矩是：GUI 的活儿只在 handler 线程做，别的线程要用 `queue-callback` 把活儿递回去。
+
+`queue-callback` 接一个无参函数，把它丢进当前 eventspace 的事件队列，由 handler 线程在下一个空档执行。它本身立刻返回（返回值是 `void`），不等回调跑完。
+
+```racket
+(new button%
+ [parent frame]
+ [label "开始"]
+ [callback
+ (λ (button event)
+ (send msg set-label "计算中…")
+ (thread
+ (λ ()
+ (sleep 3)
+ ;; 不直接碰 msg：把更新递回 handler 线程
+ (queue-callback
+ (λ () (send msg set-label "完成"))))))])
+```
+
+`queue-callback` 还能接第二个参数：传 `#f` 表示低优先级（默认 `#t` 高优先级），让真正的用户输入事件先走。
+
+**GUI 的活儿只在 handler 线程做；别的线程要用 `queue-callback` 把活儿递回去。** 这是跨线程更新控件唯一稳妥的路子。
+
+## 流式进度：channel 在线程间递东西
+
+一次性的“完成”好办，`queue-callback` 一递就完事。但如果后台任务要不断吐进度——每算完一段就刷新一下显示——你需要一条管道把结果从后台线程送到前台。这就是 `channel`。
+
+`make-channel` 造一条通道，`channel-put` 往里放值，`channel-get` 从里取值。channel 是同步的：放和取必须配对，先到的一方会阻塞，等另一方来接头。这条性质决定了 channel 不能由 handler 线程来读——`channel-get` 一阻塞，窗口又卡了。
+
+正确做法：开一条专门的读取线程待命，它从 channel 取到一个值，就调一次 `queue-callback` 刷新界面。
+
+```racket
+#lang racket/gui
+
+(define frame (new frame% [label "进度"] [width 300] [height 80]))
+(define msg (new message% [parent frame] [label "就绪"] [auto-resize #t]))
+(define ch (make-channel))
+
+;; 待命的读取线程：取到一个值，就递一条 GUI 更新
+(thread
+ (λ ()
+ (let loop ()
+ (define v (channel-get ch)) ; 阻塞，等后台放进一个值
+ (unless (eq? v 'done)
+ (queue-callback
+ (λ () (send msg set-label (format "进度 ~a/10" v))))
+ (loop)))))
+
+(new button%
+ [parent frame]
+ [label "开始"]
+ [callback
+ (λ (button event)
+ (thread ; 后台线程：干活，把进度一步步放进 channel
+ (λ ()
+ (for ([i (in-range 1 11)])
+ (sleep 0.3)
+ (channel-put ch i))
+ (channel-put ch 'done))))])
+
+(send frame show #t)
+```
+
+读取线程是普通线程，它阻塞在 `channel-get` 上不影响任何人；后台线程只管生产，界面只管显示，两边的节奏由 channel 接合。
+
+**channel 是同步的：先到的一方会卡住，等另一方来接头。** 这条性质决定了它得配一条专职读取线程，而不是让 handler 线程去等。
+
+## 在回调里等结果：yield，不要忙等
+
+有时候你确实需要在按钮回调里拿到后台结果——比如点“导出”，等后台跑完再提示“完成”。回调里直接 `sleep` 会卡死窗口，用 `(channel-get ch)` 等结果同样会卡死。handler 线程需要一种“一边等结果、一边还能响应事件”的等法。
+
+这就是 `yield`。传给它一个可同步事件（channel 就是），它会在 handler 线程里一边派发 GUI 事件、一边等事件就绪。
+
+```racket
+#lang racket/gui
+
+(define (do-export) ; 假装这是个耗时的导出
+ (sleep 3)
+ "export.dat")
+
+(define frame (new frame% [label "yield"] [width 300] [height 80]))
+(define msg (new message% [parent frame] [label "就绪"] [auto-resize #t]))
+
+(new button%
+ [parent frame]
+ [label "导出"]
+ [callback
+ (λ (button event)
+ (define result-ch (make-channel))
+ (thread ; 后台跑导出
+ (λ () (channel-put result-ch (do-export))))
+ (send msg set-label "导出中…")
+ (define r (yield result-ch)) ; 不卡：期间照常响应事件
+ (send msg set-label (format "完成：~a" r)))])
+
+(send frame show #t)
+```
+
+有个坑要知道：`yield` 等的时候，用户还能再点这个按钮（事件被嵌套派发了）。需要防重复点击，就在按钮上加个“正在导出”的状态位。
+
+顺带一提，`(sleep/yield secs)` 是 `sleep` 的 GUI 友好版：在 handler 线程里它会边睡边派发事件，在别的线程里和普通 `sleep` 一样。
+
+**在 handler 线程里要等东西，永远用 `(yield evt)`，别用 `sleep` 或忙等。**
+
+## 给后台任务一个独立的事件循环：eventspace
+
+普通 `thread` 能搬走纯计算，已经解决大多数卡顿。但有一种场景它搞不定：后台任务本身就是事件驱动的——它要用定时器、要弹自己的对话框、要 `yield` 等东西。这些事件操作都绑在 eventspace 上。如果还在主 eventspace 里折腾，它的 `yield` 和定时器仍跑在主 handler 线程上，绕一圈又回来了。
+
+`make-eventspace` 造一个新的事件空间，它自带一条独立的 handler 线程。用 `parameterize` 把 `current-eventspace` 切过去，在里面创建的窗口、定时器、回调都归这个新空间管，由它自己的 handler 线程派发。
+
+```racket
+#lang racket/gui
+
+(define bg-es (make-eventspace)) ; 新 eventspace，自带一条 handler 线程
+
+(parameterize ([current-eventspace bg-es])
+ ;; 这只定时器挂在 bg-es 名下，notify 由 bg-es 的 handler 线程派发
+ (define heartbeat
+ (new timer%
+ [interval 500]
+ [notify-callback (λ () (displayln "后台心跳"))])))
+
+(define frame (new frame% [label "eventspace"] [width 320] [height 80]))
+(new message%
+ [parent frame]
+ [label "主窗口和后台定时器各走各的"]
+ [auto-resize #t])
+(send frame show #t)
+```
+
+不同 eventspace 的事件由各自的 handler 线程异步派发，彼此不抢同一条道。后台定时器就算 notify 里磨蹭一会儿，也只耽误它自己的 handler 线程，主窗口照常丝滑。要彻底收摊，把 `bg-es` 的 custodian 一关，它名下的窗口、定时器、排队回调全清。
+
+**不同 eventspace 的事件，由各自的 handler 线程异步派发——彼此不抢同一条道。**
+
+## 五件工具，各管一段
+
+| 工具 | 作用 | 在哪条线程 |
+|---|---|---|
+| `thread` | 把耗时计算搬离 handler 线程 | 新开的线程 |
+| `queue-callback` | 把“改 GUI”的活儿递回 handler 线程 | 调用方立刻返回，活儿在 handler 线程跑 |
+| `channel` | 线程间同步传值 | 放和取各在一条线程，配对才成交 |
+| `yield` | 在 handler 线程里边等边响应事件 | handler 线程 |
+| `make-eventspace` | 给后台任务一条独立的事件循环 | 新的 handler 线程 |
+
+> 记住两条线：耗时任务别在 handler 线程里跑，开了后台线程就用 `queue-callback` 把 GUI 的活儿递回去——界面永远只在它自己的 handler 线程里被碰。

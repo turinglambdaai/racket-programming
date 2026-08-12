@@ -1,0 +1,141 @@
+# let-values——一次接收函数的多个返回值
+
+> Racket 的函数能一次返回多个值，`let-values` 就是把它们一次性接住、绑到本地变量上的专门工具。
+
+你写过返回两个结果的函数——把一个点拆成 x、y 坐标，或者同时给出商和余数。在 Python 里你返回一个元组，在 C 里你传两个指针进去，在 Racket 里，语言本身就让一个函数返回多个值，不必拿结构体或列表去模拟。
+
+但多个值一旦返回出来，普通 `let` 就接不住了——它每个位置只等一个值。这篇讲 Racket 怎么用 `let-values` 把一组返回值一次性绑住，以及它和 `define-values`、`call-with-values` 的关系。
+
+## 一个函数，能返回多个值
+
+在多数语言里，一个函数只能返回一个值；要带出多个结果，得打包成元组、列表或结构体。Racket 在语言层面打破了这条限制：
+
+```racket
+(values 1 2 3)
+;; 1 2 3 三个值，不是一个列表
+```
+
+**`values` 不是在构造数据结构，它就是同时吐出多个值。** 于是函数可以这样写——把一个点拆成两个坐标：
+
+```racket
+(define (split-point p)
+ (values (car p) (cdr p)))
+
+(split-point '(1 . 2))
+;; 1 2
+```
+
+返回的是两个值，不是一个含两个元素的列表。区别看似细微，下一节就知道它为什么重要。
+
+## 普通 let 接不住多个值
+
+多个值返回出来，你第一个念头可能是用 `let` 接住：
+
+```racket
+(let ([x (split-point '(1 . 2))])
+ x)
+;; 报错：result arity mismatch
+```
+
+`let` 的每个绑定位置只期待一个值，而 `split-point` 吐了两个。**Racket 不会自作主张把两个值塞进一个变量，数量对不上就是错。** 这正是多返回值“语言级”的体现——它不是被悄悄打包成列表，等着你 `car` 出来。
+
+要接住多个值，得用专门的形式。
+
+## let-values：一次绑住一组返回值
+
+`let-values` 长得像 `let`，只是左边换成了一组标识符：
+
+```racket
+(let-values ([(x y) (values 10 20)])
+ (+ x y))
+;; 30
+```
+
+`(x y)` 是一个标识符列表，右侧表达式必须返回对应数量的值——返回两个就绑两个，返回三个就绑三个。`x` 拿第一个，`y` 拿第二个，绑定只在 body 里有效。
+
+它也支持一次绑好几组，还能用 rest 参数收尾：
+
+```racket
+(let-values ([(a b) (values 1 2)]
+ [(c d e) (values 3 4 5)])
+ (list a b c d e))
+;; '(1 2 3 4 5)
+
+(let-values ([(a b . rest) (values 1 2 3 4)])
+ (list a b rest))
+;; '(1 2 (3 4))
+```
+
+和 `let` 一样，所有右侧表达式先算完，再同时绑定——后面的绑定看不到前面的变量。
+
+## define-values：留给模块顶层
+
+在模块顶层接住多个值，对应的形式是 `define-values`：
+
+```racket
+(define-values (width height) (values 640 480))
+
+width
+;; 640
+```
+
+它和 `let-values` 的区别只在作用域：**`define-values` 是顶层的 `let-values`，`let-values` 是局部的 `define-values`。** 一个留在外面给整个模块用，一个关在 body 里用完即弃，语义上完全对称。
+
+## let*-values：让后面的绑定看见前面
+
+`let-values` 的绑定是并行的，后面看不到前面。要是后面那组需要用到前面的变量，换 `let*-values`：
+
+```racket
+(let*-values ([(x y) (values 1 2)]
+ [(z) (+ x y)]) ; z 用到了上面的 x、y
+ z)
+;; 3
+```
+
+换成 `let-values` 这里会报错，因为第二个绑定计算时 `x`、`y` 还不存在。两者的关系，和 `let` 与 `let*` 一模一样。
+
+## 它和列表不是一回事
+
+初学者常问：返回多个值再 `let-values` 接，和返回一个 list 再 `match` 或 `car`、`cadr`，有什么区别？
+
+区别在语义。列表表示“一个聚合的数据结构”——一个东西，里面装了好几份；多返回值表示“几个并列的结果”——就是好几个东西。前者要在堆上构造一个容器，后者只是值从生产者直接递给接收者，不打包。
+
+更实际的是接口的清晰度。返回 list 的函数，调用者可能拿去当普通列表到处传；返回多值的函数，调用者必须显式用 `let-values` 或 `define-values` 接住——**不会被悄悄当成一个值塞进别的表达式。** 这也是 Racket 标准库大量 API 选择多返回值的原因：`quotient/remainder` 同时给商和余数，`floor/` 同时给向下取整的商和余数，`partition` 把列表一分为二。
+
+## 实战：归一化一个向量
+
+把前面的工具用起来。归一化一个二维向量，就是算出方向不变、长度为 1 的新坐标——x、y 各除以原始长度。长度算完，两个新坐标是并列的结果，正好用多返回值：
+
+```racket
+(define (normalize x y)
+ (let ([len (sqrt (+ (* x x) (* y y)))])
+ (values (/ x len) (/ y len))))
+
+(let-values ([(nx ny) (normalize 3 4)])
+ (list nx ny))
+;; '(3/5 4/5) 长度为 5，归一化后即 (0.6 0.8)
+```
+
+这种“算完顺带带出几个结果”的模式，在解析器、编译器里更常见——`(values ast rest-input)` 把构造好的语法树和剩下的输入一起交还，调用方用 `let-values` 接住，是这类代码的标准姿势。
+
+## 语法糖的底：call-with-values
+
+`let-values` 看着像个新东西，底下其实是 `call-with-values` 的语法糖：
+
+```racket
+(let-values ([(x y) (values 1 2)])
+ (+ x y))
+```
+
+等价于：
+
+```racket
+(call-with-values
+ (λ () (values 1 2)) ; 生产者：产出多个值
+ (λ (x y) (+ x y))) ; 消费者：按位置接收
+;; 3
+```
+
+`call-with-values` 接两个函数：第一个负责产出多个值，第二个负责接收。`let-values` 只是把这个“生产—消费”的骨架藏起来，让你写得像普通 `let`。理解了这层底，就能读懂那些偏底层、偏宏的代码——它们常常直接用 `call-with-values`。
+
+多个值不是 trick，是 Racket 给“并列结果”留的一等座位：它有自己的语法去产生、去接收，不靠任何容器。**下一次看到函数返回两个值，别再想着打包成列表——直接用 `let-values` 接。**

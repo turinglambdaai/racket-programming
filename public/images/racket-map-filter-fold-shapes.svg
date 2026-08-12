@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 600" font-family='"PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'>
+  <title>map / filter / fold：三种列表变换形状</title>
+  <desc>用盒子和箭头对比 Racket 三个高阶函数的输入输出形状：map 逐元素转换保持长度；filter 按谓词筛选取子集；fold 把整个列表压成单个值。</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4a4a4a"/>
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d97757"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1040" height="600" fill="#f8f6f3"/>
+
+  <!-- Title -->
+  <text x="520" y="42" text-anchor="middle" font-size="20" font-weight="700" fill="#1a1a1a">map · filter · fold：列表变换的三种形状</text>
+  <line x1="490" y1="54" x2="550" y2="54" stroke="#d97757" stroke-width="3" stroke-linecap="round"/>
+  <text x="520" y="74" text-anchor="middle" font-size="12" fill="#6a6a6a">描述"结果是什么"，而不是"每一步怎么做"</text>
+
+  <!-- 列头 -->
+  <text x="100" y="108" text-anchor="middle" font-size="11" fill="#6a6a6a">输入</text>
+  <text x="310" y="108" text-anchor="middle" font-size="11" fill="#6a6a6a">操作</text>
+  <text x="560" y="108" text-anchor="middle" font-size="11" fill="#6a6a6a">输出</text>
+  <text x="800" y="108" text-anchor="middle" font-size="11" fill="#6a6a6a">形状</text>
+
+  <!-- ===== Row 1: map ===== -->
+  <text x="40" y="180" font-size="16" font-weight="700" fill="#d97757" font-family="monospace">map</text>
+  <!-- 输入列表 -->
+  <g>
+    <rect x="60" y="160" width="50" height="40" rx="6" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="85" y="185" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a1a">1</text>
+    <rect x="112" y="160" width="50" height="40" rx="6" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="137" y="185" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a1a">2</text>
+    <rect x="164" y="160" width="50" height="40" rx="6" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="189" y="185" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a1a">3</text>
+  </g>
+  <text x="137" y="220" text-anchor="middle" font-size="10" fill="#6a6a6a">'(1 2 3)</text>
+  <!-- 操作 -->
+  <line x1="230" y1="180" x2="280" y2="180" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="340" y="176" text-anchor="middle" font-size="12" font-family="monospace" fill="#1a1a1a">(λ (x)</text>
+  <text x="340" y="194" text-anchor="middle" font-size="12" font-family="monospace" fill="#1a1a1a"> (* x x))</text>
+  <line x1="400" y1="180" x2="450" y2="180" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <!-- 输出 -->
+  <g>
+    <rect x="470" y="160" width="50" height="40" rx="6" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="495" y="185" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a1a">1</text>
+    <rect x="522" y="160" width="50" height="40" rx="6" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="547" y="185" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a1a">4</text>
+    <rect x="574" y="160" width="50" height="40" rx="6" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="599" y="185" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a1a">9</text>
+  </g>
+  <text x="547" y="220" text-anchor="middle" font-size="10" fill="#6a6a6a">'(1 4 9)</text>
+  <!-- 形状说明 -->
+  <text x="800" y="176" text-anchor="middle" font-size="11" font-weight="700" fill="#1a1a1a">长度不变</text>
+  <text x="800" y="194" text-anchor="middle" font-size="10" fill="#6a6a6a">逐元素转换</text>
+
+  <!-- ===== Row 2: filter ===== -->
+  <text x="40" y="310" font-size="16" font-weight="700" fill="#d97757" font-family="monospace">filter</text>
+  <g>
+    <rect x="60" y="290" width="50" height="40" rx="6" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="85" y="315" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a1a">1</text>
+    <rect x="112" y="290" width="50" height="40" rx="6" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="137" y="315" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a1a">2</text>
+    <rect x="164" y="290" width="50" height="40" rx="6" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="189" y="315" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a1a">3</text>
+    <rect x="216" y="290" width="50" height="40" rx="6" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="241" y="315" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a1a">4</text>
+  </g>
+  <text x="163" y="350" text-anchor="middle" font-size="10" fill="#6a6a6a">'(1 2 3 4)</text>
+  <!-- 被筛掉的（淡化） -->
+  <line x1="230" y1="310" x2="280" y2="310" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="340" y="306" text-anchor="middle" font-size="12" font-family="monospace" fill="#1a1a1a">even?</text>
+  <text x="340" y="324" text-anchor="middle" font-size="9" fill="#6a6a6a">留下偶数</text>
+  <line x1="400" y1="310" x2="450" y2="310" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <g>
+    <rect x="470" y="290" width="50" height="40" rx="6" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="495" y="315" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a1a">2</text>
+    <rect x="522" y="290" width="50" height="40" rx="6" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="547" y="315" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a1a">4</text>
+  </g>
+  <text x="547" y="350" text-anchor="middle" font-size="10" fill="#6a6a6a">'(2 4)</text>
+  <text x="800" y="306" text-anchor="middle" font-size="11" font-weight="700" fill="#1a1a1a">变短</text>
+  <text x="800" y="324" text-anchor="middle" font-size="10" fill="#6a6a6a">按谓词取子集</text>
+
+  <!-- ===== Row 3: fold ===== -->
+  <text x="40" y="440" font-size="16" font-weight="700" fill="#d97757" font-family="monospace">foldl</text>
+  <g>
+    <rect x="60" y="420" width="44" height="40" rx="6" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="82" y="445" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">1</text>
+    <rect x="108" y="420" width="44" height="40" rx="6" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="130" y="445" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">2</text>
+    <rect x="156" y="420" width="44" height="40" rx="6" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="178" y="445" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">3</text>
+    <rect x="204" y="420" width="44" height="40" rx="6" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="226" y="445" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">4</text>
+  </g>
+  <text x="154" y="480" text-anchor="middle" font-size="10" fill="#6a6a6a">'(1 2 3 4)</text>
+  <line x1="260" y1="440" x2="300" y2="440" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="350" y="436" text-anchor="middle" font-size="12" font-family="monospace" fill="#1a1a1a">+ 0</text>
+  <text x="350" y="454" text-anchor="middle" font-size="9" fill="#6a6a6a">从左累加</text>
+  <!-- 折叠过程箭头汇拢 -->
+  <path d="M 405 440 L 450 440" fill="none" stroke="#d97757" stroke-width="2" marker-end="url(#arrow-orange)"/>
+  <!-- 单值输出 -->
+  <rect x="460" y="414" width="130" height="52" rx="10" fill="#f4e4c1" stroke="#d97757" stroke-width="2"/>
+  <text x="525" y="447" text-anchor="middle" font-size="22" font-weight="700" fill="#d97757">10</text>
+  <text x="525" y="486" text-anchor="middle" font-size="10" fill="#6a6a6a">单个值</text>
+  <text x="800" y="436" text-anchor="middle" font-size="11" font-weight="700" fill="#1a1a1a">压成一个值</text>
+  <text x="800" y="454" text-anchor="middle" font-size="10" fill="#6a6a6a">求和/求积/构造</text>
+
+  <!-- 底部洞察 -->
+  <g>
+    <rect x="80" y="520" width="880" height="60" rx="10" fill="#f8f6f3" stroke="#4a4a4a" stroke-width="1" stroke-opacity="0.4"/>
+    <text x="520" y="548" text-anchor="middle" font-size="12" fill="#1a1a1a">绝大多数循环的本质只有三种：转换（map）、筛选（filter）、压缩（fold）。</text>
+    <text x="520" y="568" text-anchor="middle" font-size="11" font-weight="700" fill="#d97757">三者都是高阶函数 —— 把"做什么"传进去，不用操心"怎么遍历"。</text>
+  </g>
+</svg>

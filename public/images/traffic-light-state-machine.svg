@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" font-family='"PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'>
+  <title>红绿灯状态机：状态、转移与驱动</title>
+  <desc>红绿灯状态机的状态转移图：红灯到时间变绿，绿灯到时间变黄，黄灯到时间变红，循环往复。三件事——状态、转移、驱动。</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4a4a4a"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="900" height="540" fill="#f8f6f3"/>
+
+  <!-- Title -->
+  <text x="450" y="42" text-anchor="middle" font-size="20" font-weight="700" fill="#1a1a1a">红绿灯状态机 · 状态转移图</text>
+  <line x1="420" y1="54" x2="480" y2="54" stroke="#d97757" stroke-width="3" stroke-linecap="round"/>
+  <text x="450" y="74" text-anchor="middle" font-size="12" fill="#6a6a6a">状态、转移、驱动 —— 三件事凑齐，就是一台状态机</text>
+
+  <!-- ===== 三个状态节点（三角形布局，循环箭头） ===== -->
+  <!-- 红 (左下) -->
+  <g>
+    <circle cx="220" cy="320" r="62" fill="#d97757" stroke="#4a4a4a" stroke-width="2"/>
+    <text x="220" y="300" text-anchor="middle" font-size="11" font-weight="600" fill="#f8f6f3" letter-spacing="1">状态</text>
+    <text x="220" y="324" text-anchor="middle" font-size="22" font-weight="700" fill="#f8f6f3">'red</text>
+    <text x="220" y="346" text-anchor="middle" font-size="11" fill="#f8f6f3">红灯</text>
+  </g>
+
+  <!-- 绿 (顶) -->
+  <g>
+    <circle cx="450" cy="180" r="62" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="2"/>
+    <text x="450" y="160" text-anchor="middle" font-size="11" font-weight="600" fill="#2a2a2a" letter-spacing="1">状态</text>
+    <text x="450" y="184" text-anchor="middle" font-size="22" font-weight="700" fill="#1a1a1a">'green</text>
+    <text x="450" y="206" text-anchor="middle" font-size="11" fill="#2a2a2a">绿灯</text>
+  </g>
+
+  <!-- 黄 (右下) -->
+  <g>
+    <circle cx="680" cy="320" r="62" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="2"/>
+    <text x="680" y="300" text-anchor="middle" font-size="11" font-weight="600" fill="#2a2a2a" letter-spacing="1">状态</text>
+    <text x="680" y="324" text-anchor="middle" font-size="22" font-weight="700" fill="#1a1a1a">'yellow</text>
+    <text x="680" y="346" text-anchor="middle" font-size="11" fill="#2a2a2a">黄灯</text>
+  </g>
+
+  <!-- 转移箭头：红 → 绿 -->
+  <path d="M 264 268 C 320 220, 360 200, 392 188" fill="none" stroke="#4a4a4a" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <!-- 绿 → 黄 -->
+  <path d="M 508 188 C 540 200, 580 220, 636 268" fill="none" stroke="#4a4a4a" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <!-- 黄 → 红 -->
+  <path d="M 618 320 L 282 320" fill="none" stroke="#4a4a4a" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <!-- 转移标签：next 函数（文字标注，不套框避免遮挡箭头） -->
+  <text x="340" y="200" text-anchor="middle" font-size="10" fill="#6a6a6a">到时间</text>
+  <text x="560" y="200" text-anchor="middle" font-size="10" fill="#6a6a6a">到时间</text>
+  <text x="450" y="312" text-anchor="middle" font-size="10" fill="#6a6a6a">到时间</text>
+
+  <!-- 中央：next 纯函数 -->
+  <g>
+    <rect x="350" y="380" width="200" height="56" rx="10" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="450" y="402" text-anchor="middle" font-size="10" fill="#6a6a6a">转移规则 · 纯函数</text>
+    <text x="450" y="422" text-anchor="middle" font-size="12" font-family="monospace" fill="#1a1a1a">(define (next s) ...)</text>
+  </g>
+
+  <!-- 底部三件事图例 -->
+  <g>
+    <rect x="60" y="460" width="780" height="60" rx="10" fill="#f8f6f3" stroke="#4a4a4a" stroke-width="1" stroke-opacity="0.4"/>
+    <text x="100" y="484" font-size="11" font-weight="700" fill="#d97757">状态</text>
+    <text x="140" y="484" font-size="11" fill="#1a1a1a">此刻是什么颜色（'red / 'green / 'yellow）</text>
+    <text x="100" y="506" font-size="11" font-weight="700" fill="#d97757">转移</text>
+    <text x="140" y="506" font-size="11" fill="#1a1a1a">从这个状态下一步去哪（next 纯函数，死规则）</text>
+    <text x="500" y="484" font-size="11" font-weight="700" fill="#d97757">驱动</text>
+    <text x="540" y="484" font-size="11" fill="#1a1a1a">谁推它往前走（时间循环，每隔一会儿走一步）</text>
+    <text x="500" y="506" font-size="11" font-weight="700" fill="#6a6a6a">缺一不可</text>
+    <text x="560" y="506" font-size="11" fill="#6a6a6a">—— 没状态不知在哪，没转移不知去哪，没驱动永远停着</text>
+  </g>
+</svg>

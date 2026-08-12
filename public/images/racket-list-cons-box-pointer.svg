@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 540" font-family='"PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'>
+  <title>列表是 cons 链：盒指针图</title>
+  <desc>用 box-and-pointer 图展示 Racket 列表的本质：每个 cons 格子分左右两半，左放元素、右是指向下一个格子的指针，链尾收在空表 '()。对比非列表 pair (1 . 2)。</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4a4a4a"/>
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d97757"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1000" height="540" fill="#f8f6f3"/>
+
+  <!-- Title -->
+  <text x="500" y="44" text-anchor="middle" font-size="20" font-weight="700" fill="#1a1a1a">列表 = cons 链 · 盒指针图</text>
+  <line x1="470" y1="56" x2="530" y2="56" stroke="#d97757" stroke-width="3" stroke-linecap="round"/>
+  <text x="500" y="78" text-anchor="middle" font-size="12" fill="#6a6a6a">每个格子分两半：左装值，右是指针，链尾收在 '()</text>
+
+  <!-- ===== 左：非列表 pair (1 . 2) ===== -->
+  <text x="180" y="120" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">普通 pair · 不是 list</text>
+  <text x="180" y="138" text-anchor="middle" font-size="10" fill="#6a6a6a">(cons 1 2) → '(1 . 2)</text>
+
+  <!-- pair box -->
+  <g>
+    <rect x="110" y="160" width="70" height="48" fill="#f4e4c1" stroke="#4a4a4a" stroke-width="1.5"/>
+    <line x1="145" y1="160" x2="145" y2="208" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="127" y="190" text-anchor="middle" font-size="15" font-weight="700" fill="#1a1a1a">1</text>
+    <text x="162" y="190" text-anchor="middle" font-size="15" font-weight="700" fill="#1a1a1a">2</text>
+  </g>
+  <!-- car/cdr 标注 -->
+  <text x="127" y="228" text-anchor="middle" font-size="9" fill="#6a6a6a">car</text>
+  <text x="162" y="228" text-anchor="middle" font-size="9" fill="#6a6a6a">cdr</text>
+  <text x="180" y="250" text-anchor="middle" font-size="10" fill="#d97757">右格是值 2，不指向 '() ——尾巴没收住</text>
+
+  <!-- ===== 右：list '(1 2 3) ===== -->
+  <text x="620" y="120" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">列表 · pair 右链到底</text>
+  <text x="620" y="138" text-anchor="middle" font-size="10" fill="#6a6a6a">(cons 1 (cons 2 (cons 3 '()))) → '(1 2 3)</text>
+
+  <!-- 三个 cons box -->
+  <g>
+    <!-- box 1 -->
+    <rect x="440" y="160" width="70" height="48" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <line x1="475" y1="160" x2="475" y2="208" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="457" y="190" text-anchor="middle" font-size="15" font-weight="700" fill="#1a1a1a">1</text>
+    <!-- box 2 -->
+    <rect x="560" y="160" width="70" height="48" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <line x1="595" y1="160" x2="595" y2="208" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="577" y="190" text-anchor="middle" font-size="15" font-weight="700" fill="#1a1a1a">2</text>
+    <!-- box 3 -->
+    <rect x="680" y="160" width="70" height="48" fill="#9dd4c7" stroke="#4a4a4a" stroke-width="1.5"/>
+    <line x1="715" y1="160" x2="715" y2="208" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="697" y="190" text-anchor="middle" font-size="15" font-weight="700" fill="#1a1a1a">3</text>
+  </g>
+
+  <!-- 指针：右格指向下一个 box 的中心 -->
+  <path d="M 492 184 C 530 184, 530 184, 558 184" fill="none" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 612 184 C 650 184, 650 184, 678 184" fill="none" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <!-- 最后一个指针指向 '() -->
+  <path d="M 732 184 L 800 184" fill="none" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 空表 -->
+  <g>
+    <rect x="803" y="166" width="56" height="36" rx="10" fill="#e8e6e3" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="831" y="190" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a1a">'()</text>
+  </g>
+  <text x="831" y="222" text-anchor="middle" font-size="9" fill="#6a6a6a">空表（链尾）</text>
+
+  <!-- car/cdr 操作示意（从第一个 box 拉出） -->
+  <path d="M 457 210 L 457 280" fill="none" stroke="#d97757" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-orange)"/>
+  <text x="437" y="268" text-anchor="middle" font-size="10" fill="#d97757">car → 1</text>
+  <path d="M 490 210 C 600 240, 700 270, 595 290" fill="none" stroke="#d97757" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-orange)"/>
+  <text x="640" y="268" text-anchor="middle" font-size="10" fill="#d97757">cdr → '(2 3) 剩下的链</text>
+
+  <!-- 取值结果框 -->
+  <g>
+    <rect x="395" y="288" width="120" height="40" rx="8" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="455" y="313" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a1a">(car l) = 1</text>
+  </g>
+  <g>
+    <rect x="555" y="288" width="160" height="40" rx="8" fill="#a8c5e6" stroke="#4a4a4a" stroke-width="1.5"/>
+    <text x="635" y="313" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a1a">(cdr l) = '(2 3)</text>
+  </g>
+
+  <!-- ===== 底部：说明文字 ===== -->
+  <g>
+    <rect x="60" y="380" width="880" height="120" rx="10" fill="#f8f6f3" stroke="#4a4a4a" stroke-width="1" stroke-opacity="0.4"/>
+    <text x="80" y="408" font-size="12" font-weight="700" fill="#1a1a1a">怎么读这张图</text>
+    <text x="80" y="432" font-size="11" fill="#1a1a1a">· 每个绿/米色格子就是一个 cons 单元，被竖线分成左右两半。</text>
+    <text x="80" y="452" font-size="11" fill="#1a1a1a">· 左半（car）装元素值；右半（cdr）是指针，指向下一个 cons 格子。</text>
+    <text x="80" y="472" font-size="11" fill="#1a1a1a">· 最后一个格子的右半指针指向空表 '()，链就到头了 —— 这就是 list。</text>
+    <text x="80" y="492" font-size="11" fill="#1a1a1a">· 普通_pair_（左图）右半是个值而不是指针，尾巴没收住，所以打印带点、不算 list。</text>
+  </g>
+</svg>
