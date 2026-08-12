@@ -73,6 +73,11 @@ export default function HomePage() {
         <p className="text-center text-xs text-sand-500">
           Racket 编程 · 吉人 · 使用 Next.js 构建
         </p>
+        <div className="flex items-center justify-center gap-2 mt-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/wechat-qr.jpg" alt="公众号" width={56} height={56} className="rounded-lg border border-sand-200" />
+          <span className="text-xs text-sand-500">扫码关注公众号</span>
+        </div>
       </footer>
     </div>
   )
