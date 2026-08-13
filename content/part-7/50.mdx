@@ -58,7 +58,7 @@ Slurpage & barfage
 
  示例：
 
- ```racket
+ ```text
  (define (square x) (* x |x))
  ; 光标在 | 处，按 c:m:f 跳到 x 后面
  (define (square x) (* x x|))
@@ -70,7 +70,7 @@ Slurpage & barfage
 
  示例：
 
- ```racket
+ ```text
  (define (square x) (* x x|))
  ; 光标在 | 处，按 c:m:b 跳到当前 x 的开头
  (define (square x) (* x |x))
@@ -82,7 +82,7 @@ Slurpage & barfage
 
  示例：
 
- ```racket
+ ```text
  (define |(square x) (* x x))
  ; 光标在 | 处，按 c:m:d 进入子表达式
  (define (|square x) (* x x))
@@ -94,7 +94,7 @@ Slurpage & barfage
 
  示例：
 
- ```racket
+ ```text
  (define |square x)
  ; 从 | 处按 m:right 跳到下一个原子的末尾
  (define square| x)
@@ -106,7 +106,7 @@ Slurpage & barfage
 
  示例：
 
- ```racket
+ ```text
  (define square |x)
  ; 从 | 处按 m:left 跳到前一个原子
  (define |square x)
@@ -122,7 +122,7 @@ Slurpage & barfage
 
  示例：
 
- ```racket
+ ```text
  (foo (bar |(+ 1 2)) baz)
  ; 光标在 | 处，按 m:s 移除 (bar ...) 的括号
  (foo bar (+ 1 2) baz)
@@ -134,7 +134,7 @@ Slurpage & barfage
 
  示例：
 
- ```racket
+ ```text
  (foo |bar baz)
  ; 光标在 | 处，按 m:( 包裹 bar
  (foo (bar) baz)
@@ -146,7 +146,7 @@ Slurpage & barfage
 
  示例：
 
- ```racket
+ ```text
  (foo (bar |(+ 1 2)) baz)
  ; 光标在 | 处，按 m:up，删除光标前面的内容
  (foo (+ 1 2) baz)
@@ -158,7 +158,7 @@ Slurpage & barfage
 
  示例：
 
- ```racket
+ ```text
  (foo (|bar (+ 1 2)) baz)
  ; 光标在 | 处，按 m:down，删除光标及其后面的内容
  (foo baz)
@@ -170,7 +170,7 @@ Slurpage & barfage
 
  示例：
 
- ```racket
+ ```text
  (* 10 (+ |(- 5 2) 3))
  ; 光标在 | 处，按 m:r，(- 5 2) 替换整个 (+ ...) 表达式
  (* 10 (- 5 2))
@@ -182,7 +182,7 @@ Slurpage & barfage
 
  示例：
 
- ```racket
+ ```text
  (let ([x 3]) (+ |(* 2 x) 1))
  ; 光标在 | 处，按 m:?，(* 2 x) 提升与 + 互换
  (+ (let ([x 3]) (* 2 x)) 1)
@@ -198,7 +198,7 @@ Slurpage & barfage
 
  示例：
 
- ```racket
+ ```text
  (foo (bar |baz) qux)
  ; 光标在括号内任意位置，按 c:right
  (foo (bar baz qux))
@@ -211,7 +211,7 @@ Slurpage & barfage
 
  示例：
 
- ```racket
+ ```text
  (foo bar (|baz qux))
  ; 光标在括号内任意位置，按 c:m:left
  (foo (bar baz qux))
@@ -224,7 +224,7 @@ Slurpage & barfage
 
  示例：
 
- ```racket
+ ```text
  (foo (bar baz |qux))
  ; 光标在括号内任意位置，按 c:left
  (foo (bar baz) qux)
@@ -237,7 +237,7 @@ Slurpage & barfage
 
  示例：
 
- ```racket
+ ```text
  (foo (bar |baz qux))
  ; 光标在括号内任意位置，按 c:m:right
  (foo bar (baz qux))

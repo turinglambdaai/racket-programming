@@ -169,4 +169,39 @@
 
 说到底，`for` 循环并没有在 Racket 里消失——它有 `for`、`for/list`、`for/fold` 一整套。但当你习惯了高阶函数，会发现自己越来越少需要它们。因为绝大多数循环的本质，不外乎三种：对每个元素做转换（`map`）、挑出满足条件的（`filter`）、把列表压成一个值（`fold`）。
 
+## 找问题，再改对
+
+下面三段代码都能跑，但都把 Racket 当 C 在写——能用，却没用上这一章的任何工具。先说出每段“别扭在哪”，再改对：
+
+**1.** 有人想数一数列表里有几个偶数：
+
+```racket
+(define (count-evens lst)
+  (define n 0)
+  (for-each (λ (x) (when (even? x) (set! n (+ n 1))))
+            lst)
+  n)
+```
+
+**2.** 有人想求一组数的最大值：
+
+```racket
+(define (my-max lst)
+  (define m (first lst))
+  (for ([x (rest lst)])
+    (when (> x m) (set! m x)))
+  m)
+```
+
+**3.** 有人想求一组数的乘积：
+
+```racket
+(define (product lst)
+  (define p 1)
+  (for ([x lst])
+    (set! p (* p x)))
+  p)
+```
+
+改完想一想：三段原代码都养了一个 `set!` 累加器。你改后的版本里，这个累加器去哪了？被哪个函数接手了？
 > 当你不再告诉计算机“每一步怎么做”，而是描述“结果是什么”时，循环就消失了，剩下的是一组可以随便拼装的小积木。

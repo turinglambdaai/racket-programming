@@ -146,7 +146,7 @@ Racket 端启动一个后台线程，运行一个事件循环（在 backend.rkt 
                         (with-handlers ([exn:fail? (lambda (e) e)])
                           (apply handler args)))
                       (thread-send thd `(response ,req-id ,response-type ,response-data))))
-                (loop)))))))))
+                (loop)))))))))))
 ```
 
 **关键设计：**

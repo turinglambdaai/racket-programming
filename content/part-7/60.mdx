@@ -88,7 +88,7 @@ racket build.rkt
 
 在 Windows 平台上，如果安装了 Inno Setup，可以生成安装程序。在 `build.rkt` 中提供了 `mkinstaller` 函数，但默认的构建流程不会调用它。要生成安装程序，需要在 Racket 中手动调用：
 
-```racket
+```bash
  racket -e "(require \"build.rkt\") (mkinstaller)"
 ```
 

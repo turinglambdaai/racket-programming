@@ -50,7 +50,10 @@ Racket 有一个更底层的模块写法，叫 `module` 表：
 ```racket
 #lang scribble/manual
 ;; 同一个 Racket 编译器，但这份文件的语法完全不像 Lisp
-;; 它是 Scribble 文档语言，@section、@bold{...} 才是它的样子
+
+@section{我的第一份文档}
+
+@bold{这段文字会加粗}
 ```
 
 **在 Racket 里，"语言"本身就是一个模块。** 语言没有写死在编译器里，`#lang` 只是替你挑了第一个要导入的模块。这就是为什么 Racket 自称"一门用来造语言的语言"。

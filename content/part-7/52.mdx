@@ -116,7 +116,7 @@ DELETE FROM tasks WHERE done = 1;
 ;; => '("学 Racket")
 
 ;; 3. 关掉连接
-(close-connection conn)
+(disconnect conn)
 ```
 
 注意几件事：没有 `apt install`，没有 `systemctl start`，没有端口号，没有用户密码。`app.db` 就是一个文件，删掉它数据就没了，拷走它数据就跟着走。连接打开到关闭之间，整个数据库就是一个文件在你程序的生命周期里活着。

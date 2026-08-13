@@ -53,16 +53,21 @@
 
 `(x y)` 是一个标识符列表，右侧表达式必须返回对应数量的值——返回两个就绑两个，返回三个就绑三个。`x` 拿第一个，`y` 拿第二个，绑定只在 body 里有效。
 
-它也支持一次绑好几组，还能用 rest 参数收尾：
+它也支持一次绑好几组：
 
 ```racket
 (let-values ([(a b) (values 1 2)]
  [(c d e) (values 3 4 5)])
  (list a b c d e))
 ;; '(1 2 3 4 5)
+```
 
-(let-values ([(a b . rest) (values 1 2 3 4)])
- (list a b rest))
+要注意，`let-values` 不支持 rest 参数——绑定的个数和值的个数必须严丝合缝，多一个少一个都报错。真想要「前几个照常接、剩下的打包收尾」，得绕道 `call-with-values`，让接收方用一个可变参数的函数把所有值收成列表：
+
+```racket
+(call-with-values
+ (λ () (values 1 2 3 4))
+ (λ args (list (first args) (second args) (drop args 2))))
 ;; '(1 2 (3 4))
 ```
 

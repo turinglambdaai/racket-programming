@@ -137,7 +137,7 @@
  #:guard (λ (value children name)
  (unless (list? children)
  (error name "children 必须是列表，得到：~a" children))
- (values value children))))
+ (values value children)))
 
 (node 1 (list (node 2 '()))) ; 正常构造
 (node 1 2) ; 报错：children 必须是列表，得到：2

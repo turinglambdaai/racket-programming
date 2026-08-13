@@ -43,6 +43,8 @@ my-first-pkg/
 ```racket
 #lang racket/base
 
+(require racket/contract)
+
 (provide add1-safe
  (contract-out
  [even? (-> exact-integer? boolean?)]))
