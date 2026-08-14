@@ -114,7 +114,7 @@ raco ctool --runtime ${RUNTIME_PATH} --runtime-access ${RUNTIME_NAME} --mods ${A
 
 - `raco ctool` 是 Racket 的编译工具。
 - 它将所有的 Racket 源代码及其依赖（包括标准库中用到的部分）打包编译成一个单一的二进制文件（`.zo` 格式）。
-- 这个 `.zo` 文件包含了整个 " 后端 " 逻辑和运行时环境。
+- 这个 `.zo` 文件包含了整个 “ 后端 ” 逻辑和运行时环境。
 - 这也是为什么最终的 App 不需要安装 Racket 解释器也能运行的原因，所有需要的都被打进去了。
 
 **2. 生成 Swift 代码 (Backend.swift)**
@@ -249,7 +249,7 @@ ${APP_SRC}/Backend.swift: ${RKT_SRC}/${RKT_MAIN}
    - 这会生成 `MyiOSApp/Backend.swift`。
 5. **Xcode 配置**：
    - 将 `Backend.swift` 拖入 Xcode 工程。
-   - 将 `res` 文件夹拖入 Xcode 工程（确保选择 "Create folder references"，这样文件夹结构会被保留，且里面的新文件会被自动识别）。
+   - 将 `res` 文件夹拖入 Xcode 工程（确保选择 “Create folder references”，这样文件夹结构会被保留，且里面的新文件会被自动识别）。
 6. **迭代开发**：
    - 每次修改 Racket 代码后，运行 `make` 更新资源和绑定代码。
    - 在 Xcode 中运行 App 即可看到最新效果。

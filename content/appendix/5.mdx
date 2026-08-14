@@ -68,7 +68,7 @@ Noise 选择了一种轻量但精巧的方式。它使用 `raco ctool --mods` �
 raco ctool --c-mods modules.c main.rkt
 ```
 
-这条命令会将 `main.rkt` 及其所有依赖，全部 " 序列化 " 进一个巨大的 C 数组，生成一个 `modules.c` 文件。
+这条命令会将 `main.rkt` 及其所有依赖，全部 “ 序列化 ” 进一个巨大的 C 数组，生成一个 `modules.c` 文件。
 
 当你编译这个 C 文件并链接进你的 App 时，Racket 代码就变成了二进制的一部分，不需要任何外部 `.zo` 文件就能运行！
 
@@ -80,7 +80,7 @@ Noise 之所以选择打包 `.zo` 文件而不是编译成 C 模块，是为了 
 - **编译速度**：`raco ctool --mods` 相比完整的 C 编译链要快得多
 - **动态依赖**：`raco ctool --mods` 会自动处理模块依赖关系，无需手动管理
 
-但这也解释了为什么用户经常遇到 **"Version Mismatch"**。因为 `.zo` 文件是二进制格式，必须和 C 运行时的版本严格对应。正如 README.md 所警告的，共享库和 boot 文件必须与你编译 Racket 代码使用的 Racket 版本相匹配。
+但这也解释了为什么用户经常遇到 **“Version Mismatch”**。因为 `.zo` 文件是二进制格式，必须和 C 运行时的版本严格对应。正如 README.md 所警告的，共享库和 boot 文件必须与你编译 Racket 代码使用的 Racket 版本相匹配。
 
 你看到的关于 `libtool` 合并 `libffi` 的复杂命令（见 README.md），本质上也是为了创建一个包含所有必要 symbols 的静态库，供 Swift 链接。
 
@@ -91,4 +91,4 @@ Noise 之所以选择打包 `.zo` 文件而不是编译成 C 模块，是为了 
 - 对于初学者，它是理解 Racket CS 编译流程的关键
 - 对于架构师，它是实现 **静态链接 Racket**、**单文件分发** 或者 **深度嵌入** 的神兵利器
 
-在 Noise 中，`raco ctool --mods` 扮演着模块打包器的核心角色，负责将多个 Racket 模块及其依赖关系打包成一个可部署的 `.zo` 文件。理解 `ctool` 及其背后的 Boot File 机制，能让你在遇到链接错误、版本冲突或者诡异的 Crash 时，拥有一双看透本质的 " 火眼金睛 "。
+在 Noise 中，`raco ctool --mods` 扮演着模块打包器的核心角色，负责将多个 Racket 模块及其依赖关系打包成一个可部署的 `.zo` 文件。理解 `ctool` 及其背后的 Boot File 机制，能让你在遇到链接错误、版本冲突或者诡异的 Crash 时，拥有一双看透本质的 “ 火眼金睛 ”。

@@ -2,7 +2,7 @@
 
 ## 引言
 
-Noise 是一个 Swift 包装器，用于简化在 Swift 应用中嵌入 Racket CS 运行时的复杂过程。乍一看，它似乎只是简单地 " 包装了一个 Racket 库 "，但实际上，整个集成过程涉及多个层次和组件，理解其工作原理需要深入分析编译和运行时两个阶段。
+Noise 是一个 Swift 包装器，用于简化在 Swift 应用中嵌入 Racket CS 运行时的复杂过程。乍一看，它似乎只是简单地 “ 包装了一个 Racket 库 ”，但实际上，整个集成过程涉及多个层次和组件，理解其工作原理需要深入分析编译和运行时两个阶段。
 
 本文将深入探讨 Noise 的核心架构，解答以下关键问题：
 - Racket CS 的最小运行时包含哪些文件？
@@ -204,7 +204,7 @@ RACKET_API_EXTERN void racket_embedded_load_file(const char *path, int as_predef
 
 Swift 会自动将这些函数映射为 Swift 函数调用，可以直接在 Swift 代码中使用。
 
-**总结**：头文件是 Swift 和 C 之间的 " 语言桥梁 "，定义了双方都能理解的接口。
+**总结**：头文件是 Swift 和 C 之间的 “ 语言桥梁 ”，定义了双方都能理解的接口。
 
 ## 四、谁来加载 Boot 文件？何时加载？
 
@@ -260,7 +260,7 @@ public struct NoiseBoot {
 4. 设置参数（如 `exec_file`, `argv` 等）
 5. 启动 Racket VM，进入可运行状态
 
-**关键理解**：boot 文件是 Racket VM 的 " 启动镜像 "，包含了解释器和基础库的字节码。没有它们，Racket VM 就像一个空壳，无法执行任何代码。
+**关键理解**：boot 文件是 Racket VM 的 “ 启动镜像 ”，包含了解释器和基础库的字节码。没有它们，Racket VM 就像一个空壳，无法执行任何代码。
 
 ## 五、运行流程详解
 

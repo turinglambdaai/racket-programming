@@ -2,13 +2,13 @@
 
 > `#lang` 决定一个文件用什么语言写，`require` 在这门语言里加载别的模块——新手最常把这两件事搞混。分清它们，Racket 的模块机制就不再是一团乱麻。
 
-你在每个 `.rkt` 文件第一行写过 `#lang racket`，也在代码里写过 `(require racket/list)`。两者都像是在"拿东西进来"，于是当你在 GUI 例子里同时看到 `#lang racket/gui` 和 `(require racket/gui/base)`，自然会问：它们是不是同一件事的两种写法？
+你在每个 `.rkt` 文件第一行写过 `#lang racket`，也在代码里写过 `(require racket/list)`。两者都像是在“拿东西进来”，于是当你在 GUI 例子里同时看到 `#lang racket/gui` 和 `(require racket/gui/base)`，自然会问：它们是不是同一件事的两种写法？
 
 不是。分不清这两者，你会在第一次想拆分模块、或第一次想给文件换个语言时卡住。要从根上分清它们，得先看清 Racket 里最基本的一个单位——模块。
 
 ## 每个文件都是一个模块
 
-在 Racket 里，一个 `.rkt` 文件就是一个模块。模块不是"装了一堆函数的文件"那么简单，它有自己的名字、自己的作用域、自己对外暴露的接口，还能被别的模块加载。
+在 Racket 里，一个 `.rkt` 文件就是一个模块。模块不是“装了一堆函数的文件”那么简单，它有自己的名字、自己的作用域、自己对外暴露的接口，还能被别的模块加载。
 
 每个模块都必须先回答一个问题：这份代码用什么语言来写？答案写在文件第一行。
 
@@ -33,7 +33,7 @@ Racket 有一个更底层的模块写法，叫 `module` 表：
  (printf "~a\n" n)))
 ```
 
-`module` 的第一个参数是模块名，第二个参数是"初始模块路径"，后面才是模块体。你在文件第一行写的 `#lang racket`，本质上就是这条长写法的简写——文件叫 `cake.rkt`，`#lang racket` 就展开成 `(module cake racket ...)`，名字直接取自文件名。
+`module` 的第一个参数是模块名，第二个参数是“初始模块路径”，后面才是模块体。你在文件第一行写的 `#lang racket`，本质上就是这条长写法的简写——文件叫 `cake.rkt`，`#lang racket` 就展开成 `(module cake racket ...)`，名字直接取自文件名。
 
 注意那个初始模块路径 `racket`。`module` 表自己不会凭空提供 `define`、`lambda`、`require`，这些语法本身也需要被导入。初始模块路径就是第一个被导进来的模块，它给整个模块搭出一套可用的语法。
 
@@ -41,7 +41,7 @@ Racket 有一个更底层的模块写法，叫 `module` 表：
 
 ## 语言本身就是一个模块
 
-顺着上一节推一步：既然 `#lang racket` 是把 `racket` 当初始模块导进来，那这个叫 `racket` 的"语言"到底是什么？
+顺着上一节推一步：既然 `#lang racket` 是把 `racket` 当初始模块导进来，那这个叫 `racket` 的“语言”到底是什么？
 
 它就是一个模块——一个提供了 `define`、`lambda`、`if`、`require`、`provide` 等基础语法的模块。你能在 `#lang racket` 的文件里写 `define`，是因为 `racket` 这个模块把它提供给了你。
 
@@ -56,7 +56,7 @@ Racket 有一个更底层的模块写法，叫 `module` 表：
 @bold{这段文字会加粗}
 ```
 
-**在 Racket 里，"语言"本身就是一个模块。** 语言没有写死在编译器里，`#lang` 只是替你挑了第一个要导入的模块。这就是为什么 Racket 自称"一门用来造语言的语言"。
+**在 Racket 里，“语言”本身就是一个模块。** 语言没有写死在编译器里，`#lang` 只是替你挑了第一个要导入的模块。这就是为什么 Racket 自称“一门用来造语言的语言”。
 
 ## `require` 在当前语言上加载模块
 
@@ -124,7 +124,7 @@ Racket 有一个更底层的模块写法，叫 `module` 表：
 (provide (rename-out [square sq])) ;; 导出时改名：square 对外叫 sq
 ```
 
-`all-defined-out` 是图省事，个人脚本里常用；`all-from-out` 用来做"中转站"，把别人模块的导出透传给自己的用户；`rename-out` 用来规避命名冲突，或换个更顺口的名字对外。
+`all-defined-out` 是图省事，个人脚本里常用；`all-from-out` 用来做“中转站”，把别人模块的导出透传给自己的用户；`rename-out` 用来规避命名冲突，或换个更顺口的名字对外。
 
 **没有 `provide`，模块就是一只黑箱。**
 
@@ -132,7 +132,7 @@ Racket 有一个更底层的模块写法，叫 `module` 表：
 
 回到开头的疑问。`#lang racket/gui` 和 `#lang racket` 加 `(require racket/gui/base)`，确实都能让你写 GUI，但它们不是一回事。
 
-按官方文档，`racket/gui` 是一门独立的语言，它"把 `racket` 语言的所有绑定，与 `racket/gui/base`、`racket/draw` 两个模块合并在一起"。换句话说，换语言的同时，你默认拿到的绑定比单独 `require` 一个 GUI 库要多——至少多出一个 `racket/draw`。
+按官方文档，`racket/gui` 是一门独立的语言，它“把 `racket` 语言的所有绑定，与 `racket/gui/base`、`racket/draw` 两个模块合并在一起”。换句话说，换语言的同时，你默认拿到的绑定比单独 `require` 一个 GUI 库要多——至少多出一个 `racket/draw`。
 
 | | `#lang racket/gui` | `#lang racket` 加 `require` |
 |---|---|---|

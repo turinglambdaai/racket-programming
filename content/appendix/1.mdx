@@ -13,14 +13,14 @@
 Noise 的架构可以概括为三层模型：
 
 1. **Runtime Embedding (C Layer)**: 通过 C 接口启动和管理 Racket 运行时。
-2. **Data Bridge (Serialization Layer)**: 定义一套二进制协议，让 Swift 和 Racket 互相 " 听得懂 "。
+2. **Data Bridge (Serialization Layer)**: 定义一套二进制协议，让 Swift 和 Racket 互相 “ 听得懂 ”。
 3. **Execution Model (IPC/Actor Layer)**: 不直接从 Swift 调用 Racket 函数，而是建立一个 Client-Server 模型，通过管道（Pipes）通信。
 
 让我们逐层拆解。
 
 ## 第一层：启动运行时 (The C Bridge)
 
-任何嵌入式项目的第一步都是初始化。Noise 使用的是 **Racket CS (Chez Scheme)** 版本。在 Sources/Noise/Racket.swift 中，我们可以看到核心的初始化代码。Racket CS 的启动需要特定的 "boot files"（引导文件），这些文件包含了运行时的基础逻辑。
+任何嵌入式项目的第一步都是初始化。Noise 使用的是 **Racket CS (Chez Scheme)** 版本。在 Sources/Noise/Racket.swift 中，我们可以看到核心的初始化代码。Racket CS 的启动需要特定的 “boot files”（引导文件），这些文件包含了运行时的基础逻辑。
 
 ```swift
 // 实际实现
@@ -42,7 +42,7 @@ public init(execPath: String = "racket") {
 **关键点：**
 
 - **资源管理**：你需要将这些 `.boot` 文件打包进你的应用资源包中，并在运行时获取它们的路径。
-- **线程模型**：`racket_boot` 运行的线程会成为 Racket 的 "Main Place"。后续的所有操作如果不加以控制，都会在这个线程上发生。
+- **线程模型**：`racket_boot` 运行的线程会成为 Racket 的 “Main Place”。后续的所有操作如果不加以控制，都会在这个线程上发生。
 - **线程安全**：Noise 提供了 `bracket`、`activate` 和 `deactivate` 方法来管理线程状态，避免与垃圾回收器竞争。
 
 **给其他语言的启示：** 如果你的目标语言（如 Lua, Python, Guile）有 C API，第一步永远是构建一个最小的 C 包装器来处理 `init`/`boot`。
@@ -208,4 +208,4 @@ let result = await backend.simulateProcess(data)
 4. **Async Loop**: 在嵌入语言端实现一个 `While True` 循环读取输入、处理、写回输出。在宿主语言端实现 `Future/Promise` 映射。
 5. **Isolation**: 确保每个请求在独立的上下文中执行，失败不会崩溃整个系统。
 
-Noise 不仅仅是一个 Racket 包装器，它展示了现代多语言编程的最佳实践：**类型安全、异步设计、代码生成、错误隔离**。这才是 " 嵌入 " 一门语言的正确姿势。
+Noise 不仅仅是一个 Racket 包装器，它展示了现代多语言编程的最佳实践：**类型安全、异步设计、代码生成、错误隔离**。这才是 “ 嵌入 ” 一门语言的正确姿势。
