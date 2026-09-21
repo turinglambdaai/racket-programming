@@ -4,7 +4,7 @@
 
 🌐 Live site: <https://racket.jrtx.site>
 
-![MDX](https://img.shields.io/badge/MDX-1B1C1D?logo=mdx&logoColor=white) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+![MDX](https://img.shields.io/badge/MDX-1B1C1D?logo=mdx&logoColor=white) [![License](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-blue)](LICENSE)
 
 **English** · [中文](README.zh-CN.md)
 
@@ -184,4 +184,5 @@ Chapters live under `content/<part-id>/`. The build step (`scripts/build-content
 
 ## License
 
-Licensed under the [MIT License](LICENSE).
+Book text is licensed under [CC BY-NC-SA 4.0](LICENSE); code samples are
+additionally available under the [MIT License](LICENSE-CODE).
