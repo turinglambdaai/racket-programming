@@ -4,7 +4,7 @@
 
 🌐 在线阅读：<https://racket.jrtx.site>
 
-![MDX](https://img.shields.io/badge/MDX-1B1C1D?logo=mdx&logoColor=white) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+![MDX](https://img.shields.io/badge/MDX-1B1C1D?logo=mdx&logoColor=white) [![License](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-blue)](LICENSE)
 
 [English](README.md) · **中文**
 
@@ -198,4 +198,4 @@ racket-programming/
 
 ## 许可证
 
-基于 [MIT License](LICENSE) 发布。
+正文采用 [CC BY-NC-SA 4.0](LICENSE) 许可；代码示例同时适用 [MIT License](LICENSE-CODE)。
