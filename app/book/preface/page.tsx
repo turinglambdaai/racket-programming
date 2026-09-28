@@ -7,6 +7,8 @@ import { mdxComponents } from '@/app/mdx-components'
 import remarkGfm from 'remark-gfm'
 import rehypeSlug from 'rehype-slug'
 import rehypeHighlight from 'rehype-highlight'
+// highlight.js ships no racket grammar; scheme shares the s-expression shape.
+import scheme from 'highlight.js/lib/languages/scheme'
 
 export const metadata = {
   title: '写在前面 | Racket 编程入门',
@@ -31,7 +33,7 @@ export default function PrefacePage() {
           options={{
             mdxOptions: {
               remarkPlugins: [remarkGfm],
-              rehypePlugins: [rehypeSlug, rehypeHighlight],
+              rehypePlugins: [rehypeSlug, [rehypeHighlight, { languages: { racket: scheme } }]],
             },
           }}
         />

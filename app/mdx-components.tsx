@@ -26,21 +26,14 @@ export const mdxComponents: MDXComponents = {
     <ol className="text-sand-800 mb-5 space-y-2 list-decimal pl-6 marker:text-sand-400">{children}</ol>
   ),
   li: ({ children }) => <li className="leading-[1.8] pl-1">{children}</li>,
-  code: ({ children, className }) => {
-    const isBlock = className?.includes('language-')
-    if (isBlock) {
-      return (
-        <pre className="bg-sand-900 text-sand-100 rounded-lg p-5 overflow-x-auto text-sm my-8 font-mono leading-[1.7]">
-          <code className={className}>{children}</code>
-        </pre>
-      )
-    }
-    return (
-      <code className="bg-sand-100 text-accent-600 px-1.5 py-0.5 rounded text-[0.875em] font-mono">
-        {children}
-      </code>
-    )
-  },
+  pre: ({ children }) => (
+    <pre className="!bg-sand-900 !text-sand-100 !rounded-lg !p-5 overflow-x-auto !text-sm my-8 font-mono !leading-[1.7] border border-sand-800">
+      {children}
+    </pre>
+  ),
+  code: ({ children, className }) => (
+    <code className={className}>{children}</code>
+  ),
   blockquote: ({ children }) => (
     <blockquote className="border-l-2 border-accent-400 pl-4 py-2 my-8 text-sand-600 italic">
       {children}

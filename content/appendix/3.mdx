@@ -1,5 +1,7 @@
 # Noise 精读（三）：XCFramework 的作用 - 多平台二进制框架分发
 
+> XCFramework 在 Noise 里扮演什么角色？这一篇讲清楚它如何用一份二进制产物同时服务 iOS 与 macOS。
+
 ## XCFramework 是什么
 
 XCFramework 是 Apple 在 Xcode 11 引入的一种新的二进制框架分发格式。想象一下，如果你需要在 iOS 真机、模拟器、macOS 等多个平台使用同一个框架，旧的 fat framework 方式会因为架构冲突而无法同时满足需求。XCFramework 解决了这个问题，它可以在一个包中包含多个平台和架构的二进制文件，让框架分发变得简单优雅。

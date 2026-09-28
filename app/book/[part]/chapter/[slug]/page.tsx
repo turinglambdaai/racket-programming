@@ -7,6 +7,11 @@ import ChapterNav from '@/components/ChapterNav'
 import remarkGfm from 'remark-gfm'
 import rehypeSlug from 'rehype-slug'
 import rehypeHighlight from 'rehype-highlight'
+import type { PluggableList } from 'unified'
+// highlight.js ships no racket grammar; scheme shares the s-expression shape.
+import scheme from 'highlight.js/lib/languages/scheme'
+
+const mdxPlugins: PluggableList = [rehypeSlug, [rehypeHighlight, { languages: { racket: scheme } }]]
 
 export function generateStaticParams() {
   return getAllChapterPaths().map(p => ({ part: p.part, slug: p.slug }))
@@ -42,7 +47,7 @@ export default async function ChapterPage({ params }: { params: { part: string; 
           options={{
             mdxOptions: {
               remarkPlugins: [remarkGfm],
-              rehypePlugins: [rehypeSlug, rehypeHighlight],
+              rehypePlugins: mdxPlugins,
             },
           }}
         />

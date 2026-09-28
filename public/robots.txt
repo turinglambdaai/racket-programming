@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://racket.jrtx.site/sitemap.xml

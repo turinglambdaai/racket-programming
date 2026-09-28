@@ -1,5 +1,7 @@
 # Noise 精读（六）：编译背后的 ctool - Racket 代码的 C 工具链依赖
 
+> 编译过程里反复出现的 ctool 到底是什么？顺着 Racket 代码的 C 工具链依赖，把它一次讲透。
+
 如果你仔细观察 Racket 及其生态（如 Noise）的编译过程，或者深入阅读 Noise 的 README.md，你会发现一个频繁出现的影子：`ctool`（或者更现代的 `raco ctool`）。
 
 用户经常会问：**为什么我写的是 Scheme/Racket 代码，却需要这么多 C 工具链的介入？**

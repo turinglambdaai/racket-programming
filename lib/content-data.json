@@ -1,4 +1,9 @@
 {
+  "preface": {
+    "href": "/book/preface",
+    "title": "写在前面",
+    "description": "开始读书之前，先花十秒钟认识一下作者。这篇不讲技术，只做一件事：向你介绍我的公众号。"
+  },
   "parts": [
     {
       "id": "part-1",
@@ -338,12 +343,12 @@
         },
         {
           "slug": "56",
-          "title": "如何让 Racket Web 程序稳定上线Nginx 反向代理部署指南",
+          "title": "如何让 Racket Web 程序稳定上线：Nginx 反向代理部署指南",
           "description": "让你写好的 Racket Web 程序，能够 **稳定、规范、可维护** 地跑在服务器上，并通过 **Nginx** 对外提供服务。"
         },
         {
           "slug": "57",
-          "title": "还在用字符串写 HTMLRacket xexpr 让你像写代码一样构建页面",
+          "title": "还在用字符串写 HTML？Racket xexpr 让你像写代码一样构建页面",
           "description": "在多数语言里，HTML 是一段要拼接、要转义、要忍受的字符串。在 Racket 里，HTML 是一种数据结构——你像写代码一样构建它，不用碰字符串。"
         },
         {
@@ -373,57 +378,57 @@
         {
           "slug": "1",
           "title": "Noise 精读（一）：三层架构与异步模型",
-          "description": ""
+          "description": "想在 iOS 或 macOS 应用里嵌入一个像 Racket 这样的 Lisp 运行时？这一篇从 Noise 的三层架构与异步模型讲起，为整个系列搭好骨架。"
         },
         {
           "slug": "2",
           "title": "Noise 精读（二）：Racket 嵌入 Swift 应用的底层机制",
-          "description": ""
+          "description": "Racket 是怎么在 Swift 应用里跑起来的？这一篇拆开底层的嵌入机制：运行时如何启动，两个语言的世界如何对话。"
         },
         {
           "slug": "3",
           "title": "Noise 精读（三）：XCFramework 的作用 - 多平台二进制框架分发",
-          "description": ""
+          "description": "XCFramework 在 Noise 里扮演什么角色？这一篇讲清楚它如何用一份二进制产物同时服务 iOS 与 macOS。"
         },
         {
           "slug": "4",
           "title": "Noise 精读（四）：如何为 Noise 编译 Racket - 多平台构建指南",
-          "description": ""
+          "description": "手把手为 Noise 编译 Racket：从 macOS 本地编译到跨平台构建，每一步都给出对应的命令与产物。"
         },
         {
           "slug": "5",
           "title": "Noise 精读（六）：编译背后的 ctool - Racket 代码的 C 工具链依赖",
-          "description": ""
+          "description": "编译过程里反复出现的 ctool 到底是什么？顺着 Racket 代码的 C 工具链依赖，把它一次讲透。"
         },
         {
           "slug": "6",
           "title": "Noise 精读（七）：Racket DSL 的设计与实现 - 宏系统与代码生成",
-          "description": ""
+          "description": "Noise 的 DSL 是怎么设计出来的？这一篇讲宏系统与代码生成，看一门小语言如何在 Racket 里长出来。"
         },
         {
           "slug": "7",
           "title": "Noise 精读（八）：DSL 快速入门指南 - 定义记录、枚举与 RPC",
-          "description": ""
+          "description": "用最短的路上手 Noise DSL：定义记录、枚举与 RPC，从 Racket 端一路写到 Swift 端调通。"
         },
         {
           "slug": "8",
           "title": "Noise 精读（九）：使用 Noise 库进行跨语言开发完整指南",
-          "description": ""
+          "description": "结合 NoiseBackendExample 官方示例，走完 Swift + Racket 跨语言开发的完整流程。"
         },
         {
           "slug": "9",
           "title": "Noise 精读（十）：实战：从零构建 Swift + Racket 计算器应用",
-          "description": ""
+          "description": "来点实际的：前端 SwiftUI、后端纯 Racket，从零构建一个计算器应用，把系列前面的知识全部串起来。"
         },
         {
           "slug": "10",
           "title": "Racket 编译完全指南",
-          "description": "**说明**：`Makefile` 实际上是一个封装层，所有构建操作都通过 main.zuo（Zuo 构建系统）执行。你可以直接使用 `zuo .` 命令代替 `make` 来调用相同的构建目标。"
+          "description": "从源代码编译 Racket：Linux、macOS、Windows 三平台的完整步骤，以及编译过程中值得看懂的那些实现细节。"
         },
         {
           "slug": "11",
           "title": "Racket 语言实现剖析",
-          "description": "这门语言的 “ 本体 ” 是什么？"
+          "description": "跳过语法和生态，直接看一门语言的实现本身：Racket 从 Chez Scheme 继承了什么，编译管线与运行时如何协作。"
         }
       ]
     }
