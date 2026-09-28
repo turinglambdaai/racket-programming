@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { getParts } from '@/lib/content'
+import { getParts, getPreface } from '@/lib/content'
 
 export default function HomePage() {
   const parts = getParts()
+  const preface = getPreface()
 
   return (
     <div className="min-h-screen bg-sand-50">
@@ -44,6 +45,25 @@ export default function HomePage() {
       <section className="max-w-3xl mx-auto px-6 pb-24">
         <div className="border-t border-sand-200 pt-12">
           <div className="divide-y divide-sand-200">
+            {preface && (
+              <Link
+                href={preface.href}
+                className="group flex items-start justify-between py-6 hover:bg-sand-100/50 -mx-4 px-4 rounded-lg transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-sand-500 tracking-wider uppercase mb-1">
+                    Preface · 正文之前
+                  </p>
+                  <h3 className="text-xl font-semibold text-sand-900 mb-2">
+                    {preface.title}
+                  </h3>
+                  <p className="text-sm text-sand-600 leading-relaxed line-clamp-2">
+                    {preface.description}
+                  </p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-sand-400 mt-1 ml-4 shrink-0 group-hover:text-accent-400 group-hover:translate-x-0.5 transition-all" />
+              </Link>
+            )}
             {parts.map((part) => (
               <Link
                 key={part.id}
@@ -69,17 +89,10 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-sand-200 py-12">
-        <div className="max-w-3xl mx-auto px-6 flex flex-col items-center gap-8">
-          <div className="flex flex-col items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/wechat-qr.jpg" alt="公众号二维码" width={120} height={120} className="rounded-lg border border-sand-200 bg-white p-1.5" />
-            <p className="text-xs text-sand-500">扫码关注公众号</p>
-          </div>
-          <p className="text-xs text-sand-400">
-            Racket 编程入门 · 吉人 · 使用 Next.js 构建
-          </p>
-        </div>
+      <footer className="border-t border-sand-200 py-10">
+        <p className="text-center text-xs text-sand-400">
+          Racket 编程入门 · 吉人 · 使用 Next.js 构建
+        </p>
       </footer>
     </div>
   )

@@ -15,6 +15,16 @@ export interface Part {
   chapters: Chapter[]
 }
 
+export interface Preface {
+  href: string
+  title: string
+  description: string
+}
+
+export function getPreface(): Preface | null {
+  return (contentData as { preface: Preface | null }).preface ?? null
+}
+
 export function getParts(): Part[] {
   return contentData.parts as Part[]
 }

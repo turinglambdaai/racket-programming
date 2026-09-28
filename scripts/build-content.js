@@ -63,8 +63,24 @@ function getAllChapterPaths() {
   return paths;
 }
 
+// Preface lives outside the part numbering; its title/description feed the
+// homepage listing row (parsed from content/preface.mdx with the same rules
+// as chapters).
+function getPreface() {
+  const prefacePath = path.join(contentDir, 'preface.mdx');
+  if (!fs.existsSync(prefacePath)) return null;
+  const content = fs.readFileSync(prefacePath, 'utf-8');
+  const titleMatch = content.match(/^#\s+(.+)$/m);
+  const descMatch = content.match(/^>\s+(.+)$/m);
+  return {
+    href: '/book/preface',
+    title: titleMatch ? titleMatch[1].trim() : '写在前面',
+    description: descMatch ? descMatch[1].trim() : '',
+  };
+}
+
 const partsData = PARTS_META.map(p => ({ ...p, chapters: getChapters(p.id) }));
-const data = { parts: partsData, paths: getAllChapterPaths() };
+const data = { preface: getPreface(), parts: partsData, paths: getAllChapterPaths() };
 
 fs.writeFileSync(outputFile, JSON.stringify(data, null, 2));
 console.log(`Content data generated: ${outputFile} (${partsData.length} parts, ${data.paths.length} chapters)`);

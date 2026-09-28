@@ -29,6 +29,19 @@ export default function Sidebar() {
         </Link>
       </div>
       <nav className="p-3">
+        <div className="mb-3 pb-2 border-b border-sand-200">
+          <Link
+            href="/book/preface"
+            className={cn(
+              'block px-3 py-2 rounded-md text-sm font-medium transition-colors',
+              pathname === '/book/preface'
+                ? 'text-accent-500 bg-accent-50'
+                : 'text-sand-600 hover:text-sand-900 hover:bg-sand-50'
+            )}
+          >
+            写在前面
+          </Link>
+        </div>
         {parts.map(part => (
           <div key={part.id} className="mb-1">
             <button
