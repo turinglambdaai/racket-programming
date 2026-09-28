@@ -1,17 +1,15 @@
-# 如何让 Racket Web 程序稳定上线：Nginx 反向代理部署指南
+# 稳定上线——给 Racket Web 程序配好 Nginx
 
-本文面向 **Racket Web 开发者**，目标很明确：
+> 写好的 Racket Web 程序怎么对外服务？答案分两层：Racket 在本机一个端口上稳定响应 HTTP，剩下的——HTTPS、反向代理、静态资源、进程守护——全部交给 Nginx。这篇把这条最省心的部署路线完整走一遍。
 
-> 让你写好的 Racket Web 程序，能够 **稳定、规范、可维护** 地跑在服务器上，并通过 **Nginx** 对外提供服务。
-
-不假设你熟悉前端或运维知识，只假设你已经：
+不假设你熟悉运维，只假设你已经：
 
 - 能用 Racket 写一个 Web 程序（`web-server` 或类似框架）
 - 能在服务器上运行 Racket 程序
 
-## 一、为什么需要 Nginx
+## 为什么需要 Nginx
 
-很多 Racket 新手会直接这样做：
+很多人会直接这样做：
 
 ```bash
 racket main.rkt
@@ -44,7 +42,7 @@ racket main.rkt
 [ Racket Web ] :127.0.0.1:8000
 ```
 
-## 二、一个最小可部署的 Racket Web 程序
+## 一个最小可部署的 Racket Web 程序
 
 我们先准备一个 **最简单但规范** 的 Racket Web 服务。
 
@@ -81,23 +79,23 @@ racket main.rkt
 http://127.0.0.1:8000
 ```
 
-## 三、Nginx 的核心概念（够用版）
+## Nginx 的核心概念（够用版）
 
 在部署 Racket Web 时，你只需要理解三件事：
 
-### 1. 反向代理（reverse proxy）
+### 反向代理（reverse proxy）
 
 Nginx 接收请求 → 转发给 Racket → 再把响应返回给客户端。
 
-### 2. upstream（可选）
+### upstream（可选）
 
 当你有多个后端实例时使用，新手可以先不用。
 
-### 3. location
+### location
 
 用来匹配 URL 路径，并指定处理方式。
 
-## 四、最小 Nginx 配置（HTTP）
+## 最小 Nginx 配置（HTTP）
 
 假设你的 Racket 程序运行在：
 
@@ -105,13 +103,13 @@ Nginx 接收请求 → 转发给 Racket → 再把响应返回给客户端。
 127.0.0.1:8000
 ```
 
-### 1. 创建站点配置
+### 创建站点配置
 
 ```bash
 sudo nano /etc/nginx/sites-available/racket-app
 ```
 
-### 2. 基础配置内容
+### 基础配置内容
 
 ```nginx
 server {
@@ -129,7 +127,7 @@ server {
 }
 ```
 
-### 3. 启用配置
+### 启用配置
 
 ```bash
 sudo ln -s /etc/nginx/sites-available/racket-app /etc/nginx/sites-enabled/
@@ -149,17 +147,17 @@ http://example.com
 Browser -> Nginx :80 -> Racket :8000
 ```
 
-## 五、HTTPS（Let’s Encrypt）
+## HTTPS（Let's Encrypt）
 
 现实部署中 **强烈建议使用 HTTPS**。
 
-### 1. 安装 Certbot
+### 安装 Certbot
 
 ```bash
 sudo apt install certbot python3-certbot-nginx
 ```
 
-### 2. 自动配置证书
+### 自动配置证书
 
 ```bash
 sudo certbot --nginx -d example.com
@@ -174,11 +172,11 @@ Certbot 会：
 
 你不需要改 Racket 程序任何代码。
 
-## 六、静态资源交给 Nginx
+## 静态资源交给 Nginx
 
 **不要让 Racket 去处理 CSS / JS / 图片。**
 
-### 1. 项目结构示例
+### 项目结构示例
 
 ```text
 app/
@@ -188,7 +186,7 @@ app/
  └─ app.js
 ```
 
-### 2. Nginx 配置静态目录
+### Nginx 配置静态目录
 
 ```nginx
 location /static/ {
@@ -196,7 +194,7 @@ location /static/ {
 }
 ```
 
-### 3. Racket 中引用
+### Racket 中引用
 
 ```html
 <link rel="stylesheet" href="/static/style.css">
@@ -209,9 +207,9 @@ location /static/ {
 
 性能和结构都会更清晰。
 
-## 七、Racket 程序如何长期运行
+## Racket 程序如何长期运行
 
-### 1. 不要用 SSH 会话跑
+### 不要用 SSH 会话跑
 
 错误示例：
 
@@ -220,7 +218,7 @@ ssh server
 racket main.rkt
 ```
 
-### 2. 使用 systemd（推荐）
+### 使用 systemd（推荐）
 
 创建服务文件：
 
@@ -251,25 +249,25 @@ sudo systemctl enable racket-app
 sudo systemctl start racket-app
 ```
 
-## 八、常见问题与排查思路
+## 常见问题与排查思路
 
-### 1. 浏览器 502 Bad Gateway
+### 浏览器 502 Bad Gateway
 
 - Racket 程序是否在跑？
 - 端口是否一致？
 - 是否监听在 `127.0.0.1`？
 
-### 2. 访问慢
+### 访问慢
 
 - 静态资源是否仍由 Racket 提供？
 - 是否开启 gzip（Nginx 默认支持）
 
-### 3. 路径不对
+### 路径不对
 
 - `proxy_pass` 是否带 `/`
 - Racket 是否假设根路径为 `/`
 
-## 九、推荐的部署心智模型
+## 部署的心智模型
 
 作为 Racket 开发者，你可以这样理解：
 

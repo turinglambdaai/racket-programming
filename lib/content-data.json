@@ -298,28 +298,28 @@
         },
         {
           "slug": "47",
-          "title": "Racket 工程工具 raco 全面指南：从包管理到应用发布",
+          "title": "raco——Racket 工程体系的控制中心",
           "description": "`raco` 不只是装包的命令，它是 Racket 工程体系的控制中心——包管理、编译、测试、打包发布，全在这一个工具里。"
         },
         {
           "slug": "48",
-          "title": "Racket 包开发实战：手把手教你发布符合官方标准的 Racket 包",
+          "title": "发布一个 Racket 包——从零走完官方流程",
           "description": "写一个 Racket 包并发布到官方仓库，没有想象中那么难——这篇带你从零走完整套流程，做出符合官方标准的包。"
         },
         {
           "slug": "49",
-          "title": "Racket 开发者必看：如何将应用打包成 Windows macOS Linux 安装包",
+          "title": "打包分发——从可执行文件到三平台安装包",
           "description": "`raco exe` 给你一个可执行文件，但普通用户要的是双击安装的体验——这篇拆解从可执行文件到 Windows、macOS、Linux 原生安装包的跨平台分发全流程。"
         },
         {
           "slug": "50",
-          "title": "Racket 结构化编辑解决方案",
-          "description": "用 drracket-paredit 插件实现 S 表达式的结构化编辑。"
+          "title": "结构化编辑——让 DrRacket 替你管括号",
+          "description": "手调括号是 Lisp 新手最大的挫败感来源，也是老手从不担心的事——差别只在是否用 paredit 这类结构化编辑：括号永远成对，移动、增删、调整嵌套都以 S 表达式为单位进行。这篇带你装好 drracket-paredit，并把值得记的快捷键过一遍。"
         },
         {
           "slug": "51",
-          "title": "Racket 编码规范：提升 Lisp 代码的可维护性实践",
-          "description": "Lisp 的极简语法是双刃剑——没有规范，代码很快变成谁也读不懂的“只写语言”。这篇基于官方风格指南，提炼出可落地的编码规范。"
+          "title": "编码规范——别把 Lisp 写成只写语言",
+          "description": "Lisp 的极简语法是双刃剑——没有规范，代码很快变成谁也读不懂的\"只写语言\"。这篇基于官方风格指南，提炼出可落地的编码规范。"
         },
         {
           "slug": "52",
@@ -338,22 +338,22 @@
         },
         {
           "slug": "55",
-          "title": "用 Koyo 构建 Web 应用：Racket 爱好者的现代开发工具箱",
+          "title": "Koyo——Racket Web 应用的现代工具箱",
           "description": "想用 Racket 写个正经的 Web 应用，光靠内置的 web-server 会觉得缺这缺那。Koyo 给你补齐了现代 Web 应用所需的一整套工具，而且想用什么用什么，不强制绑定。"
         },
         {
           "slug": "56",
-          "title": "如何让 Racket Web 程序稳定上线：Nginx 反向代理部署指南",
-          "description": "让你写好的 Racket Web 程序，能够 **稳定、规范、可维护** 地跑在服务器上，并通过 **Nginx** 对外提供服务。"
+          "title": "稳定上线——给 Racket Web 程序配好 Nginx",
+          "description": "写好的 Racket Web 程序怎么对外服务？答案分两层：Racket 在本机一个端口上稳定响应 HTTP，剩下的——HTTPS、反向代理、静态资源、进程守护——全部交给 Nginx。这篇把这条最省心的部署路线完整走一遍。"
         },
         {
           "slug": "57",
-          "title": "还在用字符串写 HTML？Racket xexpr 让你像写代码一样构建页面",
+          "title": "xexpr——HTML 是数据，不是字符串",
           "description": "在多数语言里，HTML 是一段要拼接、要转义、要忍受的字符串。在 Racket 里，HTML 是一种数据结构——你像写代码一样构建它，不用碰字符串。"
         },
         {
           "slug": "58",
-          "title": "还在为 Racket 与 C 交互发愁一文搞定 FFI 调用、内存管理与常见陷阱",
+          "title": "FFI——当 Racket 需要调用 C",
           "description": "Racket 不被困在自己的生态里——它的 FFI 让你直接调用 C 的共享库，把两门语言的能力拼在一起。这篇讲清调用、内存管理和最常见的坑。"
         },
         {

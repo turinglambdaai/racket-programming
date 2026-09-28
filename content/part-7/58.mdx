@@ -1,8 +1,8 @@
-# 还在为 Racket 与 C 交互发愁一文搞定 FFI 调用、内存管理与常见陷阱
+# FFI——当 Racket 需要调用 C
 
 > Racket 不被困在自己的生态里——它的 FFI 让你直接调用 C 的共享库，把两门语言的能力拼在一起。这篇讲清调用、内存管理和最常见的坑。
 
-Racket 的 FFI（`ffi/unsafe`）基于 libffi，实现起来自然、功能全面。你可以：
+Racket 不是被困在自己生态里的语言——遇到现成的 C 库，你不必重写，直接调就行。它的 FFI（`ffi/unsafe`）基于 libffi，能做的事包括：
 
 - 调用已有共享库（`.so` / `.dylib` / `.dll`）中的函数
 - 将 Racket 的 procedure 作为 C 函数指针传给 C（回调）

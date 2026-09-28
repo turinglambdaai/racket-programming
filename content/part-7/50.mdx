@@ -1,10 +1,10 @@
-# Racket 结构化编辑解决方案
+# 结构化编辑——让 DrRacket 替你管括号
 
-> 用 drracket-paredit 插件实现 S 表达式的结构化编辑。
+> 手调括号是 Lisp 新手最大的挫败感来源，也是老手从不担心的事——差别只在是否用 paredit 这类结构化编辑：括号永远成对，移动、增删、调整嵌套都以 S 表达式为单位进行。这篇带你装好 drracket-paredit，并把值得记的快捷键过一遍。
 
 ## 结构化编辑
 
-通过在 DrRacket 中安装 [drracket-paredit](https://github.com/yjqww6/drracket-paredit) 插件，可以帮助我们在操作 S 表达式（S-expression ）时保持代码的结构性，从而避免在手动调整括号时引入问题。插件主要包含的功能如下：
+在 DrRacket 里装上 [drracket-paredit](https://github.com/yjqww6/drracket-paredit) 插件，编辑器就从「文本编辑」升级成「结构编辑」：你的操作对象不再是字符，而是 S 表达式，括号平衡由插件保证，手滑再也删不坏代码结构。它主要给你五件事：
 
 - 保持括号平衡：在插入或删除括号时，自动保证括号是成对出现的，避免语法错误。例如，当你输入 （时插件会自动补全一个） 。
 - 结构化导航：提供快捷键，以 S 表达式为单位进行导航，而不是逐字符或逐词移动。例如，可以快速跳到下一个或上一个完整的表达式。
@@ -43,7 +43,7 @@ Slurpage & barfage
 - `("c:left" "c:}")` paredit-barf-forward
 - `("c:m:right" "c:{")` paredit-barf-backward
 
-下面介绍一下各个快捷键的使用场景
+这些快捷键各自的使用场景，配着例子过一遍：
 
 >
 > 如果不了解快捷键的含义，可以参考 [Keyboard Shortcuts](https://docs.racket-lang.org/drracket/Keyboard_Shortcuts.html)
@@ -250,4 +250,4 @@ Slurpage & barfage
 - 深度操作快捷键：修改 S 表达式的嵌套结构。
 - 括号操作快捷键：高效调整括号范围
 
-这些快捷键配合使用，可以显著提升编辑代码的效率，同时保证代码的正确性，非常适合 Lisp 和 Racket 的开发者。
+三组快捷键配合起来，你就再也不是在「改文本」，而是在「改结构」——这正是 Lisp 说代码即数据时，编辑器理应配套的体验。装好它，前面各章的示例代码怎么调整括号都不慌。

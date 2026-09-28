@@ -1,103 +1,98 @@
-# Racket 编码规范：提升 Lisp 代码的可维护性实践
+# 编码规范——别把 Lisp 写成只写语言
 
-> Lisp 的极简语法是双刃剑——没有规范，代码很快变成谁也读不懂的“只写语言”。这篇基于官方风格指南，提炼出可落地的编码规范。
+> Lisp 的极简语法是双刃剑——没有规范，代码很快变成谁也读不懂的"只写语言"。这篇基于官方风格指南，提炼出可落地的编码规范。
 
-在大型 Racket 项目中，代码风格一致性直接影响团队协作效率和长期维护成本。本文基于官方风格指南，提炼出可落地的工程实践方案。
+Lisp 的语法简洁是把双刃剑：写起来快，读起来快不快，全看代码规不规矩。没有规矩，简洁会反向发酵——`(car (cdr (cdr lst)))` 这样的表达式，六个月后连作者本人都认不出它想干什么，别人更不用提。
 
-## 为什么需要编码规范
+所以这篇不讲新特性，讲规矩：基于官方风格指南，挑出最值得先立起来的几条。
 
-- **可读性陷阱**：Lisp 家族语言的极简语法既是优势也是挑战，缺乏规范易导致 “Write-Only Code”
-- **协作成本**：团队成员对括号风格、命名习惯的差异会显著增加代码审查负担
-- **维护困境**：6 个月后连作者自己都难以理解没有注释的 `(car (cdr (cdr lst)))` 到底要做什么
+## 命名与缩进
 
-## 基础风格约束
+**命名用 kebab-case**：`validate-input`，不是 `validateInput`，更不是 `validate_input`。这是 Lisp 世界的通用习惯，Racket 标准库从头到尾都是这个风格。
 
-### 命名与格式
+**缩进跟着结构走**：每个层级 2 个空格，禁用 Tab 字符。
 
-- 坚持 **kebab-case** 风格：`validate-input` 优于 `validateInput` 或 `validate_input`
-- 缩进对齐原则：
- ```racket
- (define (factorial n)
- (cond [(= n 0) 1]
- [else (* n (factorial (- n 1)))])) ; 递归情况缩进对齐
- ```
-- 禁止 Tab 字符，每个缩进层级使用 2 个空格
+```racket
+(define (factorial n)
+  (cond [(= n 0) 1]
+        [else (* n (factorial (- n 1)))])) ; 递归情况缩进对齐
+```
 
-### 模块化设计
+**括号交给编辑器管**：括号怎么排不要手写手调——第 50 章的 paredit 就是干这个的，它保证你的括号永远不会失衡。
 
-典型模块结构示例：
+## 模块长什么样
+
+一个规矩的模块，合约放在最显眼的位置：
+
 ```racket
 #lang racket
 
 (require racket/contract
- rackunit)
+         rackunit)
 
 (provide (contract-out
- [string->safe-port-number (-> string? (integer-in 1 65535))]))
+          [string->safe-port-number (-> string? (integer-in 1 65535))]))
 
 ;; 将字符串转换为合法的端口号
 (define (string->safe-port-number str)
- (define port (string->number str))
- (unless (and (integer? port) (<= 1 port 65535))
- (error 'invalid-port))
- port)
+  (define port (string->number str))
+  (unless (and (integer? port) (<= 1 port 65535))
+    (error 'invalid-port))
+  port)
 ```
 
-## 代码表达最佳实践
+一眼看过去，读的人先看到 `provide`：这个模块给外界什么、各是什么类型。实现细节全部排在后面。
 
-### 控制流优化
+## 写法上的两条取舍
 
-- 优先选择 `cond` 而非嵌套 `if`：
- ```racket
- ;; 反模式
- (if (positive? x)
- (if (> x 100)
- 'large
- 'small)
- 'negative)
+**`cond` 优于嵌套 `if`**。多分支时嵌套 `if` 会越埋越深，`cond` 把所有分支平铺在同一列：
 
- ;; 推荐模式
- (cond [(positive? x) (if (> x 100) 'large 'small)]
- [else 'negative])
- ```
+```racket
+;; 反模式
+(if (positive? x)
+    (if (> x 100)
+        'large
+        'small)
+    'negative)
 
-### 数据结构选择
+;; 推荐模式
+(cond [(positive? x) (if (> x 100) 'large 'small)]
+      [else 'negative])
+```
 
-- 避免滥用列表，使用 `struct` 定义领域对象：
- ```racket
- (struct employee (name id department) #:transparent)
- (define john (employee "John Doe" 1001 "R&D"))
- ```
+**该用 `struct` 就别用列表凑**。列表什么都能装，也就什么都不说明；`struct` 给每个字段一个名字，读代码的人和工具都不用猜第三个元素是什么：
 
-## 文档与测试规范
+```racket
+(struct employee (name id department) #:transparent)
+(define john (employee "John Doe" 1001 "R&D"))
+```
 
-### 注释层级
+## 注释与测试
 
-- 文件头注释说明模块职责
-- 函数前注释包含：
- ```racket
- ;; 计算两个坐标点的欧式距离
- ;; @param p1 点1 (cons x y)
- ;; @param p2 点2 (cons x y)
- ;; @return 两点间的直线距离
- (define (distance p1 p2) ...)
- ```
+注释分两层：文件头说明模块职责，函数前说清「接什么、还什么」：
 
-### 测试策略
+```racket
+;; 计算两个坐标点的欧式距离
+;; @param p1 点1 (cons x y)
+;; @param p2 点2 (cons x y)
+;; @return 两点间的直线距离
+(define (distance p1 p2) ...)
+```
 
-使用 `rackunit` 的测试模板：
+测试就近放在模块的 `module+ test` 里，用 `rackunit`：
+
 ```racket
 (module+ test
- (require rackunit)
- (check-equal? (add1 41) 42)
- (check-exn exn:fail? (λ () (string->safe-port-number "99999"))))
+  (require rackunit)
+  (check-equal? (add1 41) 42)
+  (check-exn exn:fail? (λ () (string->safe-port-number "99999"))))
 ```
 
-## 长期维护建议
+测试跟代码住在同一个文件里，改函数的时候顺手就能跑。
 
-1. **版本控制**：将规范文档化为 `.editorconfig` 和静态检查规则
-2. **渐进改进**：在新代码中严格执行，旧代码在修改时逐步适配
-3. **工具链支持**：配置 CI 进行自动化风格检查
+## 让规范自己长出来
+
+规范立起来之后，靠三样东西维持：把规则写进 `.editorconfig` 和静态检查；新代码严格执行，旧代码改到哪儿就顺手适配到哪儿；CI 里把风格检查自动化。
 
 > 规范的价值不在于约束，而在于让开发者专注于真正重要的逻辑设计。好的 Racket 代码应该像数学证明一样优雅自明。
 

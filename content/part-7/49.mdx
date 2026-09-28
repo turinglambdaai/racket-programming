@@ -1,70 +1,30 @@
-# Racket 开发者必看：如何将应用打包成 Windows macOS Linux 安装包
+# 打包分发——从可执行文件到三平台安装包
 
 > `raco exe` 给你一个可执行文件，但普通用户要的是双击安装的体验——这篇拆解从可执行文件到 Windows、macOS、Linux 原生安装包的跨平台分发全流程。
 
-Racket 开发者常陷入的困境：用 `raco` 生成可执行文件后，如何让普通用户像安装常规软件一样轻松使用？本文将拆解跨平台分发的关键环节，揭示语言工具与操作系统生态的边界。
+上一章你把包发布进了官方目录——那是给会装包的人准备的。可你把程序发给朋友或者同事试试：他们不装 Racket，也不想敲命令行，他们要的是双击安装、开始菜单里有图标、不要了能卸载。这一步，`raco` 只负责一半。
 
-## 一、理解 Racket 分发流程的边界
-
-完整的应用分发链路包含两个责任域：
+先把整条链路摆出来：
 
 ```text
 Racket 源码 → raco exe → 可执行文件 → raco distribute → 可分发目录 → 平台安装器 → 用户安装
 ```
 
-**关键分界点**：
+分界线很清楚：**Racket 负责到「可分发目录」为止，让程序在没装 Racket 的机器上也能跑；再往后——安装向导、快捷方式、卸载——是操作系统的事。** 这不是 Racket 偷懒：注册表、.app 包结构、签名校验，每一样都是平台原生规范，跟语言无关。Racket 的选择是把「如何运行」做扎实，「如何安装」交给你平台上的现成工具。
 
-- **Racket 责任**：构建自包含的可运行环境
-- **操作系统责任**：提供安装/卸载体验
+## Windows：Inno Setup
 
-## 二、为什么 Racket 不提供安装器功能？
+Windows 用户的预期很统一：setup.exe 安装向导、开始菜单快捷方式、控制面板能卸载。推荐用 Inno Setup——免费、稳定、对「目录型应用」支持完善。
 
-### 1. 安装器的平台特性
+先出可分发目录：
 
-安装过程涉及：
-- 系统目录操作（Windows 注册表 /macOS 应用包）
-- 快捷方式创建
-- 卸载程序集成
-- 数字签名验证
-
-这些都属于 **操作系统原生规范**，与编程语言无关。
-
-### 2. Racket 的明智选择
-
-`raco distribute` 生成标准的 **可移植目录**，包含：
-- 独立运行的二进制
-- 依赖的库文件
-- 资源文件
-
-这种设计让开发者可以自由选择：
-- Windows：Inno Setup/NSIS
-- macOS：.app Bundle + dmg
-- Linux：tar.gz/AppImage
-
-## 三、Windows 分发实战指南
-
-### 1. 用户预期管理
-
-Windows 用户期待：
-- 标准的 setup.exe 安装向导
-- 开始菜单快捷方式
-- 控制面板可卸载
-
-### 2. 推荐工具链
-
-使用 **Inno Setup** 的优势：
-- 免费开源且稳定
-- 对目录型应用支持完善
-- 脚本配置简单
-
-### 3. 最小可行方案
-
-典型工作流：
 ```bash
 raco exe main.rkt
 raco distribute dist myapp
 ```
-然后配置 Inno Setup 脚本：
+
+然后写一份最小的 Inno Setup 脚本：
+
 ```iss
 [Setup]
 AppName=MyApp
@@ -77,11 +37,12 @@ Source: "dist\*"; DestDir: "{app}"; Flags: recursesubdirs
 Name: "{group}\MyApp"; Filename: "{app}\myapp.exe"
 ```
 
-## 四、macOS 分发核心要点
+编译脚本，得到 setup.exe——Windows 这条线就走完了。
 
-### 1. 理解 .app 本质
+## macOS：.app 加 dmg
 
-macOS 的 .app 是特殊目录结构：
+macOS 的 .app 不是单个文件，是一个有固定结构的目录：
+
 ```text
 MyApp.app/
 └─ Contents/
@@ -90,42 +51,26 @@ MyApp.app/
  └─ Info.plist # 应用元数据
 ```
 
-### 2. 分发流程
+流程三步：把 `raco distribute` 的输出放进 `Contents/MacOS`，补上 `Info.plist`，再用工具打成 dmg 镜像，用户拖拽安装。两个顺手的工具：`create-dmg` 生成镜像，`codesign` 做基础代码签名；要分发给外面的人，再加 `gon` 走公证流程。
 
-```mermaid
-graph TD
- A[raco distribute] --> B[手动构建 .app]
- B --> C[生成 .dmg 镜像]
- C --> D[用户拖拽安装]
-```
+## Linux：解压即用
 
-### 3. 实用工具推荐
+Linux 用户对「安装」的预期本来就不一样，最简单的方式反而最地道：
 
-- `create-dmg`：快速生成磁盘镜像
-- `codesign`：基础代码签名
-- `gon`：简化公证流程
-
-## 五、Linux 分发策略
-
-### 1. 适应 Linux 哲学
-
-推荐简单方案：
 ```bash
 tar czvf myapp-linux.tar.gz dist/
 ```
-用户只需：
+
+用户侧解压就能跑：
+
 ```bash
 tar xzvf myapp-linux.tar.gz
 ./dist/myapp
 ```
 
-### 2. 进阶选择
+想再进一步，AppImage 做单文件分发；deb/rpm 要学各家的打包规范；Flatpak 带沙箱化部署——都看你愿意为分发投入多少。
 
-- **AppImage**：单文件分发
-- **deb/rpm**：需要学习打包规范
-- **Flatpak**：沙箱化部署
-
-## 六、跨平台分发路线图
+## 三条线一张表
 
 | 平台 | 工具链 | 输出格式 | 用户体验 |
 |------|--------|----------|----------|
@@ -133,17 +78,4 @@ tar xzvf myapp-linux.tar.gz
 | macOS | app+dmg | .dmg | 拖拽安装 |
 | Linux | tar.gz | .tar.gz | 解压即用 |
 
-## 七、关键结论与行动建议
-
-**核心认知**：
-> Racket 解决 “ 如何运行 ”，平台工具解决 “ 如何安装 ”
-
-**下一步行动**：
-1. 先确保 `raco distribute` 生成目录可独立运行
-2. 选择对应平台的 **最小可行安装方案**
-3. 逐步完善签名/更新等高级特性
-
-**延伸学习**：
-- Inno Setup 配置详解
-- macOS 应用签名指南
-- Linux 软件打包规范
+最后记住那句话就够了：**Racket 解决「如何运行」，平台工具解决「如何安装」。** 先确认 `raco distribute` 出来的目录能独立运行，再挑各平台最省事的安装方案；签名、自动更新这些高级特性，留到有真实用户之后再说。Inno Setup 的脚本写法、macOS 的签名与公证、Linux 的打包规范，每一项都值得单独深挖——但那是分发这一层的下一层，不在语言这一层。
