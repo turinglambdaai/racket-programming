@@ -125,6 +125,10 @@ Noise runtime close-reading (evidence that Racket ships industrial-grade softwar
 | 10 | Racket 编译完全指南 |
 | 11 | Racket 语言实现剖析 |
 
+## Reader Feedback
+
+Every page has a feedback box: readers can report an issue with the page — or with a selected passage — and it lands as a prefilled [GitHub issue](https://github.com/turinglambdaai/racket-programming/issues?q=is%3Aissue%20label%3Abook-feedback) labeled `book-feedback`. The form is defined in [.github/ISSUE_TEMPLATE/page-feedback.yml](.github/ISSUE_TEMPLATE/page-feedback.yml).
+
 ## Tech Stack
 
 - **Framework**: Next.js 14 (App Router, static export)

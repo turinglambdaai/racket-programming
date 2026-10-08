@@ -4,6 +4,7 @@ import { getParts, getAllChapterPaths } from '@/lib/content'
 import { getChapterContent } from '@/lib/content-server'
 import { mdxComponents } from '@/app/mdx-components'
 import ChapterNav from '@/components/ChapterNav'
+import PageFeedback from '@/components/PageFeedback'
 import remarkGfm from 'remark-gfm'
 import rehypeSlug from 'rehype-slug'
 import rehypeHighlight from 'rehype-highlight'
@@ -52,6 +53,12 @@ export default async function ChapterPage({ params }: { params: { part: string; 
           }}
         />
       </div>
+      <PageFeedback
+        pagePath={`/book/${params.part}/chapter/${params.slug}`}
+        pageTitle={chapter.title}
+        sourcePath={`content/${params.part}/${params.slug}.mdx`}
+        editLabel="编辑本章"
+      />
       <ChapterNav currentPart={params.part} currentSlug={params.slug} />
     </article>
   )

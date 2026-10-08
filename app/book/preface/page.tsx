@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import { mdxComponents } from '@/app/mdx-components'
+import PageFeedback from '@/components/PageFeedback'
 import remarkGfm from 'remark-gfm'
 import rehypeSlug from 'rehype-slug'
 import rehypeHighlight from 'rehype-highlight'
@@ -47,6 +48,12 @@ export default function PrefacePage() {
           <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
+      <PageFeedback
+        pagePath="/book/preface"
+        pageTitle="写在前面"
+        sourcePath="content/preface.mdx"
+        editLabel="编辑前言"
+      />
     </article>
   )
 }
