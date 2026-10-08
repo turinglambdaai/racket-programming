@@ -109,7 +109,7 @@ Seven volumes (60 chapters) + appendix (11 articles). The narrative arc goes: pl
 
 ### Appendix (附录)
 
-Universal patterns for embedding Racket inside native applications (case study: Rivet), a complete guide to compiling Racket from source, and a dissection of Racket's language implementation.
+Universal patterns for embedding Racket inside native applications, a complete guide to compiling Racket from source, and a dissection of Racket's language implementation.
 
 | # | Title |
 |---|-------|
