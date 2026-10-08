@@ -41,6 +41,14 @@ export default function Sidebar() {
           >
             写在前面
           </Link>
+          <a
+            href="https://github.com/turinglambdaai/racket-programming/issues/new?template=page-feedback.yml"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block px-3 py-2 rounded-md text-sm text-sand-600 hover:text-sand-900 hover:bg-sand-50 transition-colors"
+          >
+            问题反馈
+          </a>
         </div>
         {parts.map(part => (
           <div key={part.id} className="mb-1">

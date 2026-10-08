@@ -139,6 +139,10 @@ Noise 嵌入式运行时精读（Racket 能打工业级的核心证据链）、R
 | 10 | Racket 编译完全指南 |
 | 11 | Racket 语言实现剖析 |
 
+## 读者反馈
+
+每一页底部都有反馈入口：读者可以反馈整页问题，也可以选中一段文字定点反馈，提交后自动生成带页面信息的 [GitHub issue](https://github.com/turinglambdaai/racket-programming/issues?q=is%3Aissue%20label%3Abook-feedback)（自动打 `book-feedback` 标签）。表单定义在 [.github/ISSUE_TEMPLATE/page-feedback.yml](.github/ISSUE_TEMPLATE/page-feedback.yml)。
+
 ## 技术栈
 
 - **框架**：Next.js 14（App Router，静态导出）

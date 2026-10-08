@@ -1,0 +1,34 @@
+name: 章节反馈
+description: 某一章的错误、不清楚的讲解、跑不起来的代码——从书页里点反馈按钮会自动填好页面信息
+title: "【章节反馈】"
+labels: ["book-feedback"]
+body:
+  - type: checkboxes
+    id: kind
+    attributes:
+      label: 问题类型（可多选）
+      options:
+        - label: 内容错误（事实、概念或示例有误）
+        - label: 讲解不清楚（读不懂、跳步、缺前提）
+        - label: 代码无法运行（示例代码有 bug 或环境问题）
+        - label: 错别字或排版
+        - label: 其他建议
+  - type: textarea
+    id: detail
+    attributes:
+      label: 具体描述
+      description: 哪一段、哪里不对、你期望的是什么。如果照着书操作没跑通，请贴出你看到的报错。
+    validations:
+      required: true
+  - type: input
+    id: page-url
+    attributes:
+      label: 页面
+      description: 从书页点反馈按钮会自动填好，一般不用改。
+      placeholder: https://racket.jrtx.site/book/...
+  - type: textarea
+    id: quote
+    attributes:
+      label: 选中的原文
+      description: 如果你用的是书页里的"反馈这段"按钮，这里会带上你选中的文字。
+      render: markdown
