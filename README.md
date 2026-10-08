@@ -2,11 +2,9 @@
 
 **《Racket 编程入门——从零基础到独立开发应用》** — an online book about the Racket programming language, written in Chinese. It runs from the first principles of computation, through functional and imperative programming, object-oriented GUIs and language design with macros and `#lang`, all the way to shipping real applications. Built with Next.js and MDX.
 
-🌐 Live site: <https://racket.jrtx.site>
-
 ![MDX](https://img.shields.io/badge/MDX-1B1C1D?logo=mdx&logoColor=white) [![License](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-blue)](LICENSE)
 
-**English** · [中文](README.zh-CN.md)
+**English** · [中文](README.zh-CN.md) · 🌐 [racket.jrtx.site](https://racket.jrtx.site)
 
 ## Book Structure
 
