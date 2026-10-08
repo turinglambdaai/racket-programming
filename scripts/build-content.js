@@ -21,7 +21,7 @@ const PARTS_META = [
   { id: 'part-7', number: 7, title: '走向生产：工程化与实战', subtitle: 'Production',
     description: '回答"读完这本书，我能用 Racket 做什么"。工具链、打包分发、数据库、Web 实战、工业级案例，对标 Core Python Applications Programming。' },
   { id: 'appendix', number: 8, title: '附录', subtitle: 'Appendix',
-    description: 'Noise 嵌入式运行时精读（Racket 能打工业级的核心证据链）、Racket 编译完全指南、Racket 语言实现剖析。' },
+    description: '把 Racket 嵌进原生应用的通用模式（以 Rivet 为案例）、Racket 编译完全指南、Racket 语言实现剖析。' },
 ];
 
 // Chapter slug is a plain numeric string (global chapter number for the book,

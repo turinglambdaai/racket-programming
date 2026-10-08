@@ -123,21 +123,13 @@
 
 ### 附录
 
-Noise 嵌入式运行时精读（Racket 能打工业级的核心证据链）、Racket 编译完全指南、Racket 语言实现剖析。
+把 Racket 嵌进原生应用的通用模式（案例：Rivet）、Racket 编译完全指南、Racket 语言实现剖析。
 
 | 篇 | 标题 |
 |----|------|
-| 1 | Noise 精读（一）：三层架构与异步模型 |
-| 2 | Noise 精读（二）：Racket 嵌入 Swift 应用的底层机制 |
-| 3 | Noise 精读（三）：XCFramework 的作用 - 多平台二进制框架分发 |
-| 4 | Noise 精读（四）：如何为 Noise 编译 Racket - 多平台构建指南 |
-| 5 | Noise 精读（六）：编译背后的 ctool - Racket 代码的 C 工具链依赖 |
-| 6 | Noise 精读（七）：Racket DSL 的设计与实现 - 宏系统与代码生成 |
-| 7 | Noise 精读（八）：DSL 快速入门指南 - 定义记录、枚举与 RPC |
-| 8 | Noise 精读（九）：使用 Noise 库进行跨语言开发完整指南 |
-| 9 | Noise 精读（十）：实战：从零构建 Swift + Racket 计算器应用 |
-| 10 | Racket 编译完全指南 |
-| 11 | Racket 语言实现剖析 |
+| 1 | 把 Racket 嵌进原生应用——嵌入式运行时的通用模式 |
+| 2 | Racket 编译完全指南 |
+| 3 | Racket 语言实现剖析 |
 
 ## 读者反馈
 

@@ -20,7 +20,7 @@ export default function PartPage({ params }: { params: { part: string } }) {
     <div>
       <div className="mb-10">
         <p className="text-xs tracking-widest uppercase text-sand-500 mb-2">
-          第 {part.number} 部分 · {part.subtitle}
+          {part.id === 'appendix' ? part.subtitle : `第 ${part.number} 部分 · ${part.subtitle}`}
         </p>
         <h1 className="text-3xl font-bold text-sand-900 tracking-tight">{part.title}</h1>
         <p className="mt-3 text-sand-600 leading-relaxed">{part.description}</p>

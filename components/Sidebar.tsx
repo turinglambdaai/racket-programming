@@ -67,7 +67,7 @@ export default function Sidebar() {
                 <ChevronRight className="w-3 h-3 shrink-0 text-sand-400" />
               )}
               <span className="truncate">
-                {part.number}. {part.title}
+                {part.id === 'appendix' ? part.title : `${part.number}. ${part.title}`}
               </span>
             </button>
             {expanded[part.id] && part.chapters.length > 0 && (

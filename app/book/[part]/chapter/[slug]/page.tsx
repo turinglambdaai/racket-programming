@@ -22,7 +22,8 @@ export function generateMetadata({ params }: { params: { part: string; slug: str
   const part = getParts().find(p => p.id === params.part)
   const chapter = part?.chapters.find(c => c.slug === params.slug)
   if (!part || !chapter) return { title: '章节未找到' }
-  return { title: `${chapter.title} | 第 ${part.number} 部分 · ${part.title}` }
+  const partLabel = part.id === 'appendix' ? part.title : `第 ${part.number} 部分 · ${part.title}`
+  return { title: `${chapter.title} | ${partLabel}` }
 }
 
 export default async function ChapterPage({ params }: { params: { part: string; slug: string } }) {
@@ -38,7 +39,7 @@ export default async function ChapterPage({ params }: { params: { part: string; 
     <article>
       <div className="mb-8 pb-4 border-b border-sand-200">
         <p className="text-xs tracking-widest uppercase text-sand-500">
-          第 {part.number} 部分 · {part.title}
+          {part.id === 'appendix' ? part.title : `第 ${part.number} 部分 · ${part.title}`}
         </p>
       </div>
       <div className="prose max-w-none">
