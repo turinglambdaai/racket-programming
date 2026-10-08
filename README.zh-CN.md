@@ -2,11 +2,9 @@
 
 《Racket 编程入门——从零基础到独立开发应用》——一本关于 Racket 编程语言的在线书籍。从计算的第一性原理出发，经函数式与命令式编程、面向对象的 GUI、用宏和 `#lang` 做语言设计，一路走到工程化与上线实战。使用 Next.js 与 MDX 构建。
 
-🌐 在线阅读：<https://racket.jrtx.site>
-
 ![MDX](https://img.shields.io/badge/MDX-1B1C1D?logo=mdx&logoColor=white) [![License](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-blue)](LICENSE)
 
-[English](README.md) · **中文**
+[English](README.md) · **中文** · 🌐 [racket.jrtx.site](https://racket.jrtx.site)
 
 ## 全书结构
 
