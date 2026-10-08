@@ -373,12 +373,12 @@
       "number": 8,
       "title": "附录",
       "subtitle": "Appendix",
-      "description": "把 Racket 嵌进原生应用的通用模式（以 Rivet 为案例）、Racket 编译完全指南、Racket 语言实现剖析。",
+      "description": "把 Racket 嵌进原生应用的核心技术（嵌入式运行时通用模式）、Racket 编译完全指南、Racket 语言实现剖析。",
       "chapters": [
         {
           "slug": "1",
           "title": "把 Racket 嵌进原生应用——嵌入式运行时的通用模式",
-          "description": "你已经读完了一整本书的 Racket。这一篇回答一个收官问题：Racket 能不能不住在自己的 REPL 里，而是住进别人家的应用——一个 Swift 写的 macOS 应用、一个 C++ 写的 Windows 程序？答案是能，而且这条路已经走通了不止一次。我们把这类「嵌入式运行时」方案的通用模式一次讲透。"
+          "description": "你已经读完了一整本书的 Racket。这一篇回答一个收官问题：Racket 能不能不住在自己的 REPL 里，而是住进别人家的应用——一个 Swift 写的 macOS 应用、一个 C++ 写的 Windows 程序？答案是能。这一篇把「嵌入式运行时」的核心技术一次讲透：运行时怎么装进进程、值怎么跨过语言边界、粘合代码怎么不用手写。"
         },
         {
           "slug": "2",
