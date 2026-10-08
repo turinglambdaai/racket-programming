@@ -88,7 +88,7 @@ Racket 的 Web 服务器能直接跑，但生产环境通常会在前面加一�
 
 **跨语言互操作。** 有些能力 Racket 自己没有现成的，但 C 有——加密库、系统调用、底层硬件接口。Racket 的 FFI（`ffi/unsafe`）让你直接调用 C 的共享库，把 Racket 和 C 的能力拼在一起。
 
-Noise 项目（卷七前面精读过）就是 FFI 的极致应用——它把 Racket 运行时嵌进了 iOS 应用，让 Swift 和 Racket 互相对话。FFI 是 Racket 不被困在自己生态里的出口。
+附录讲的「嵌入式运行时」就是 FFI 的极致应用——它把整个 Racket 运行时嵌进原生应用的进程，让 Swift、C++ 和 Racket 互相对话。FFI 是 Racket 不被困在自己生态里的出口。
 
 ## 把它们连起来
 

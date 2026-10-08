@@ -1,516 +1,366 @@
-# Noise 精读（二）：Racket 嵌入 Swift 应用的底层机制
+# Racket 编译完全指南
 
-> Racket 是怎么在 Swift 应用里跑起来的？这一篇拆开底层的嵌入机制：运行时如何启动，两个语言的世界如何对话。
+> 从源代码编译 Racket：Linux、macOS、Windows 三平台的完整步骤，以及编译过程中值得看懂的那些实现细节。
 
-## 引言
+作为一名开发者，从源代码编译 Racket 不仅能让你获得最新的功能和性能优化，还能深入了解这个强大的语言实现。无论你是在 Linux、macOS 还是 Windows 上，这篇指南都会带你一步步完成编译过程。
 
-Noise 是一个 Swift 包装器，用于简化在 Swift 应用中嵌入 Racket CS 运行时的复杂过程。乍一看，它似乎只是简单地 “ 包装了一个 Racket 库 ”，但实际上，整个集成过程涉及多个层次和组件，理解其工作原理需要深入分析编译和运行时两个阶段。
+## 仓库结构
 
-本文将深入探讨 Noise 的核心架构，解答以下关键问题：
-- Racket CS 的最小运行时包含哪些文件？
-- 这些文件如何参与 Swift 的编译过程？
-- 谁来加载 boot 文件，何时加载？
-- 编译顺序和依赖关系是什么？
-- 头文件被谁使用？
-- noise-serde-lib 的真实角色是什么？
-
-## 架构概览：三层分离的设计
-
-Noise 采用三层分离的架构设计：
+Racket 仓库被组织成不同的目录，以分离源代码、标准库、包和构建基础设施。理解这种结构有助于你有效地浏览代码库。
 
 ```text
-┌─────────────────────────────────────────┐
-│           你的 Swift 应用                │
-└────────────┬────────────────────────────┘
-             │
-┌────────────▼────────────────────────────┐
-│      Noise 框架 (Swift 代码)             │
-│  - Racket.swift (运行时封装)            │
-│  - Serde.swift (序列化)                  │
-│  - Backend.swift (RPC)                  │
-└────────────┬────────────────────────────┘
-             │
-┌────────────▼────────────────────────────┐
-│   RacketCS.xcframework (静态库)         │
-│  - libracketcs.a (Racket VM)            │
-│  - racket.h, racketcs.h (头文件)        │
-└─────────────────────────────────────────┘
+racket/racket/
+├── racket/src/                 │   ├── cs/                     # Racket CS (Chez Scheme) 实现
+│   ├── bc/                     # Racket BC (C/字节码) 实现
+│   ├── expander/               # 宏扩展器和模块系统
+│   ├── ChezScheme/             # 嵌入的 Chez Scheme 源代码
+│   ├── rktio/                  # Racket I/O 抽象层
+│   ├── worksp/                 # 工作区管理
+│   └── version/                # 版本配置
+│
+├── racket/collects/            # Racket 标准库
+│   ├── racket/                 # 核心 Racket 语言模块
+│   ├── compiler/               # 编译器基础设施
+│   ├── syntax/                 # 语法和宏系统
+│   ├── net/                    # 网络库
+│   ├── pkg/                    # 包管理
+│   ├── setup/                  # 安装和设置工具
+│   └── [many other collections]
+│
+├── pkgs/                       # 附加包
+│   ├── base/                   # 基础语言包
+│   ├── compiler-lib/           # 编译器库工具
+│   ├── racket-doc/             # 文档源代码
+│   ├── net-lib/                # 网络库
+│   └── [package libraries]
+│
+├── main.zuo                    # Zuo 构建系统入口点
+├── Makefile                    # 构建配置（封装 main.zuo）
+├── README.md                   # 仓库概述
+└── build.md                    # 官方构建说明
 ```
 
-**核心理解**：每一层都有独立的职责，彼此之间通过明确定义的接口通信。
+> **说明**：`Makefile` 实际上是一个封装层，所有构建操作都通过 main.zuo（Zuo 构建系统）执行。你可以直接使用 `zuo .` 命令代替 `make` 来调用相同的构建目标。
 
-## 一、Racket CS 的最小运行时包含哪些文件？
+## 平台准备
 
-Noise 需要从 Racket 中提取三类文件：
+### Unix/Linux 系统
 
-### 1. 静态库文件 (.a)
-
-每个平台对应的 Racket CS 编译产物：
+在大多数 Linux 发行版上，你需要安装以下基础工具：
 
 ```bash
-Lib/
-├── libracketcs-arm64-ios.a              # iOS 设备架构
-├── libracketcs-arm64-iphonesimulator.a  # iOS 模拟器架构
-├── libracketcs-arm64-macos.a            # macOS ARM64 架构
-└── libracketcs-x86_64-macos.a           # macOS Intel 架构
+# Ubuntu/Debian
+
+sudo apt-get install build-essential git
+
+# Fedora/RHEL
+
+sudo dnf install gcc make git
+
+# Arch Linux
+
+sudo pacman -S base-devel git
 ```
 
-这些静态库被封装成 `.xcframework`：
+### macOS
 
-```makefile
-RacketCS-macos.xcframework: Lib/include/* Lib/libracketcs-universal-macos.a
-    xcodebuild -create-xcframework \
-        -library Lib/libracketcs-universal-macos.a \
-        -headers Lib/include \
-        -output $@
-```
-
-**静态库包含**：Chez Scheme 虚拟机、Racket CS 核心运行时、C API 函数实现
-
-### 2. 头文件 (.h)
+在 macOS 上，确保你已安装 Xcode 命令行工具：
 
 ```bash
-Lib/include/
-├── racket.h              # 主入口，根据平台包含对应的 chezscheme.h
-├── racketcs.h            # Racket CS API 定义
-├── racketcsboot.h        # 启动参数结构定义
-├── chezscheme-arm64-macos.h      # macOS ARM64 的 Chez Scheme 接口
-├── chezscheme-x86_64-macos.h     # macOS Intel 的 Chez Scheme 接口
-├── chezscheme-arm64-ios.h        # iOS 设备的 Chez Scheme 接口
-└── chezscheme-arm64-iphonesimulator.h  # iOS 模拟器的 Chez Scheme 接口
+xcode-select --install
 ```
 
-**头文件包含**：C 函数声明、数据结构定义、宏定义
+### Windows
 
-### 3. Boot 文件
+Windows 的构建稍微复杂一些，需要：
+
+- Microsoft Visual Studio（2008/9.0 到 2022/17.0 版本）
+- 或者使用 Windows Subsystem for Linux (WSL)
+
+## 快速开始：原地构建（推荐）
+
+原地构建是默认且推荐的模式，它将构建和安装合并为一个操作，非常适合开发。
+
+### Unix/Linux 和 macOS
 
 ```bash
-Sources/NoiseBoot_iOS/boot/arm64-ios/
-├── petite.boot    # Petite Scheme 基础镜像
-├── scheme.boot    # 完整的 Scheme 镜像
-└── racket.boot    # Racket 语言扩展镜像
+# 克隆仓库
 
-Sources/NoiseBoot_macOS/boot/arm64-macos/
-├── petite.boot
-├── scheme.boot
-└── racket.boot
+git clone https://github.com/racket/racket.git
+cd racket
+
+# 开始原地构建
+
+make in-place
+
+# 或者直接使用 make（默认就是 in-place）
+
+make
 ```
 
-**Boot 文件包含**：编译后的字节码、初始数据结构、核心库代码
-
-## 二、编译流程详解
-
-### 阶段 1：Racket 源码 → 静态库
-
-这是在构建 Racket CS 时完成的，与 Noise 无关：
-
-```text
-Racket 源码 (C/Scheme)
-    ↓ 配置和编译 (configure & make)
-libracketcs.a (静态库)
-    ↓ xcodebuild 打包
-RacketCS.xcframework (binary target)
-```
-
-### 阶段 2：Swift 项目的编译
-
-看 Package.swift 的定义：
-
-```swift
-.binaryTarget(
-    name: "RacketCS-ios",
-    path: "RacketCS-ios.xcframework"
-),
-.binaryTarget(
-    name: "RacketCS-macos",
-    path: "RacketCS-macos.xcframework"
-),
-.target(
-    name: "Noise",
-    dependencies: [
-        .target(name: "NoiseBoot_iOS", condition: .when(platforms: [.iOS])),
-        .target(name: "NoiseBoot_macOS", condition: .when(platforms: [.macOS])),
-        .target(name: "RacketCS-ios", condition: .when(platforms: [.iOS])),
-        .target(name: "RacketCS-macos", condition: .when(platforms: [.macOS])),
-    ],
-    linkerSettings: [
-        .linkedLibrary("curses", .when(platforms: [.macOS])),
-        .linkedLibrary("iconv"),
-    ]
-)
-```
-
-**编译顺序**：
-
-1. **预编译阶段**（已存在于仓库中）：
-   - `RacketCS-ios.xcframework`
-   - `RacketCS-macos.xcframework`
-
-2. **编译阶段**（Swift 编译器处理）：
-```text
-   NoiseBoot_iOS (只有资源)
-   NoiseBoot_macOS (只有资源)
-   Noise (Swift 代码，依赖上述)
-   NoiseBackend (Swift 代码，依赖 Noise)
-   NoiseSerde (Swift 代码)
-   你的应用 (依赖上述所有)
-   ```
-
-3. **链接阶段**：
-   - Swift 调用 Clang 模块导入器
-   - 读取 `RacketCS.xcframework` 中的头文件
-   - 链接静态库中的符号
-
-**关键点**：`import RacketCS` 在 Racket.swift 并不是导入一个 Swift 模块，而是告诉 Swift Package Manager 链接对应的 binaryTarget。
-
-## 三、头文件被谁使用？如何使用？
-
-当你编写 `import RacketCS` 时，Swift 编译器会：
-
-1. **找到对应的 binaryTarget**（`RacketCS-macos` 或 `RacketCS-ios`）
-2. **读取头文件**：从 `xcframework` 的 `Headers/` 目录
-3. **解析头文件**：使用 Clang 的模块映射功能
-
-### 头文件的组织
-
-`racket.h` 是主入口（见 racket.h）：
-
-```c
-#if defined(__x86_64__)
-# include "chezscheme-x86_64-macos.h"
-
-#elif defined(__arm64__)
-# include "TargetConditionals.h"
-# if TARGET_OS_IPHONE
-#  define _Nonnull
-#  define _Nullable
-#  include "chezscheme-arm64-ios.h"
-# else
-#  include "chezscheme-arm64-macos.h"
-# endif
-
-#include "racketcs.h"
-```
-
-根据编译目标自动选择正确的平台头文件。
-
-### Swift 如何调用 C 函数
-
-Swift 编译器通过头文件了解 C 函数的签名，例如 `racketcs.h` 中的定义（racketcs.h）：
-
-```c
-RACKET_API_EXTERN ptr racket_apply(ptr proc, ptr arg_list);
-RACKET_API_EXTERN ptr racket_primitive(const char *name);
-RACKET_API_EXTERN void racket_embedded_load_file(const char *path, int as_predefined);
-```
-
-Swift 会自动将这些函数映射为 Swift 函数调用，可以直接在 Swift 代码中使用。
-
-**总结**：头文件是 Swift 和 C 之间的 “ 语言桥梁 ”，定义了双方都能理解的接口。
-
-## 四、谁来加载 Boot 文件？何时加载？
-
-### Boot 文件的加载过程
-
-Boot 文件不是在编译时加载，而是在 **运行时** 由 Swift 代码加载。
-
-看 Racket.swift：
-
-```swift
-public init(execPath: String = "racket") {
-    var args = racket_boot_arguments_t()
-    args.exec_file = execPath.utf8CString.cstring()
-
-    // 获取 boot 文件路径
-    args.boot1_path = NoiseBoot.petiteURL.path.utf8CString.cstring()
-    args.boot2_path = NoiseBoot.schemeURL.path.utf8CString.cstring()
-    args.boot3_path = NoiseBoot.racketURL.path.utf8CString.cstring()
-
-    // 调用 C 函数初始化 Racket VM
-    racket_boot(&args)
-    racket_deactivate_thread()
-
-    // 清理
-    args.exec_file.deallocate()
-    args.boot1_path.deallocate()
-    args.boot2_path.deallocate()
-    args.boot3_path.deallocate()
-}
-```
-
-### Boot 文件路径的获取
-
-在 NoiseBoot.swift 中：
-
-```swift
-public struct NoiseBoot {
-  public static let petiteURL = Bundle.module.url(forResource: "boot/\(ARCH)-macos/petite", withExtension: "boot")!
-  public static let schemeURL = Bundle.module.url(forResource: "boot/\(ARCH)-macos/scheme", withExtension: "boot")!
-  public static let racketURL = Bundle.module.url(forResource: "boot/\(ARCH)-macos/racket", withExtension: "boot")!
-}
-```
-
-这些 boot 文件在编译时通过 `.copy("boot")` 作为资源复制到应用 bundle 中。
-
-### racket_boot() 做了什么？
-
-`racket_boot()` 是 C 函数，在静态库 `libracketcs.a` 中实现：
-
-1. 读取 `petite.boot`，初始化 Petite Scheme
-2. 读取 `scheme.boot`，扩展为完整 Scheme
-3. 读取 `racket.boot`，加载 Racket 语言特性
-4. 设置参数（如 `exec_file`, `argv` 等）
-5. 启动 Racket VM，进入可运行状态
-
-**关键理解**：boot 文件是 Racket VM 的 “ 启动镜像 ”，包含了解释器和基础库的字节码。没有它们，Racket VM 就像一个空壳，无法执行任何代码。
-
-## 五、运行流程详解
-
-### 完整的启动流程
-
-```text
-1. Swift 应用启动
-   ↓
-2. 创建 Racket 实例
-   let racket = Racket()
-   ↓
-3. Racket.init() 执行:
-   - 获取 boot 文件路径
-   - 调用 racket_boot(&args)
-   - racket_boot() 读取三个 boot 文件
-   - 初始化 Racket VM
-   ↓
-4. 加载 Racket 代码
-   racket.load(zo: URL(fileURLWithPath: "/path/to/noise-serde.zo"))
-   ↓ 调用 racket_embedded_load_file()
-   - 编译 Racket 代码到内存
-   - 注册模块和函数
-   ↓
-5. 使用 Racket 功能
-   racket.require("noise/serde", from: "module")
-   - 调用 racket_dynamic_require()
-   - 加载指定的模块
-   - 返回模块的导出对象
-   ↓
-6. Swift 和 Racket 交互
-   - Swift → Racket: 调用 racket_apply()
-   - Racket → Swift: 使用 NoiseSerde 序列化
-```
-
-### 值包装和垃圾回收
-
-Swift 通过 `Val` 类型包装 Racket 的指针（见 Racket.swift）：
-
-```swift
-struct Val {
-    let ptr: ptr  // void* 指针，指向 Racket 堆中的对象
-}
-```
-
-**关键机制**：
-- Racket 使用自己的垃圾回收器
-- Swift 的 `Val` 只是轻量级包装，不拥有所有权
-- 所有 Racket 操作必须在创建 Racket 实例的线程上执行
-- 使用 `bracket()` 方法确保线程激活/停放的配对
-
-## 六、noise-serde-lib 的双重角色
-
-这是最容易误解的部分。很多人认为 `noise-serde-lib` 只是一个代码生成器，但实际上它有两个角色：
-
-### 角色 1：编译时代码生成器
-
-**`codegen.rkt`** 将 Racket 的类型定义转换为 Swift 代码：
-
-```racket
-#lang racket/base
-
-(define-record person
-  [name : String]
-  [age : Int32])
-```
-
-运行 `racket -l noise/codegen` 生成：
-
-```swift
-public struct Person: Readable, Writable {
-  public let name: String
-  public let age: Int32
-
-  public static func read(from inp: InputPort, using buf: inout Data) -> Person {
-    return Person(
-      name: String.read(from: inp, using: &buf),
-      age: Int32.read(from: inp, using: &buf)
-    )
-  }
-
-  public func write(to out: OutputPort) {
-    name.write(to: out)
-    age.write(to: out)
-  }
-}
-```
-
-### 角色 2：运行时序列化库
-
-**`private/serde.rkt`** 提供 Racket 端的序列化实现：
-
-```racket
-(define (read-record info [in (current-input-port)])
-  (apply
-   (record-info-constructor info)
-   (for/list ([f (in-list (record-info-fields info))])
-     (read-field (record-field-type f) in))))
-
-(define (write-record info v [out (current-output-port)])
-  (for ([f (in-list (record-info-fields info))])
-    (define type (record-field-type f))
-    (define value ((record-field-accessor f) v))
-    (write-field type value out)))
-```
-
-### 为什么两端都需要序列化？
-
-因为序列化是 **双向的**：
-
-```text
-Swift → Racket:
-Swift Person → Writable.write() → 字节流 → Racket read-record() → Racket Person
-
-Racket → Swift:
-Racket Person → write-record() → 字节流 → Swift Readable.read() → Swift Person
-```
-
-### 运行时加载
-
-`noise-serde-lib` 的 Racket 代码会被编译成 `.zo` 文件，运行时加载：
-
-```swift
-racket.load(zo: URL(fileURLWithPath: "/path/to/noise-serde.zo"))
-let serde = racket.require("serde", from: "module")
-```
-
-**关键理解**：noise-serde-lib 不在静态库中，而是作为编译后的 Racket 代码（.zo）被加载到 Racket VM 中执行。
-
-## 七、完整的集成示例
-
-### 开发阶段
-
-```racket
-;; 定义数据结构
-#lang racket
-(require noise-serde-lib)
-
-(define-record user
-  [id : Varint]
-  [name : String]
-  [email : Optional String]
-  [scores : Listof Float32])
-
-(define-enum role
-  [admin]
-  [user]
-  [guest])
-```
-
-运行代码生成器：
+构建过程会：
+
+1. 编译 Zuo 构建系统
+2. 构建最小化的 Racket
+3. 从包服务器下载并安装指定的包（默认是 `main-distribution` 和 `main-distribution-test`）
+4. 将 `pkgs/` 目录中的包链接到开发模式
+5. 构建并安装文档
+
+构建完成后，Racket 安装在仓库的 `racket/` 子目录中，可以直接使用：
 
 ```bash
-racket -l noise/codegen -t definitions.rkt > NoiseModels.swift
+# 测试安装
+
+./racket/bin/racket --version
+
+# 运行 REPL
+
+./racket/bin/racket
 ```
 
-生成的 Swift 代码：
+### Windows
 
-```swift
-public struct User: Readable, Writable {
-  public let id: UVarint
-  public let name: String
-  public let email: String?
-  public let scores: [Float32]
-}
+在 Windows 上，首先需要配置 Visual Studio 环境：
 
-public enum Role: Readable, Writable {
-  case admin
-  case user
-  case guest
-}
+```cmd
+# 打开 Developer Command Prompt for VS
+# 然后进入 Racket 源代码目录
+
+cd racket
+
+# 配置构建环境（选择 x64 或 x86）
+
+racket\src\worksp\msvcprep.bat x64
+
+# 开始构建
+
+nmake
 ```
 
-### 运行阶段
+`nmake` 命令会执行与 Unix 上 `make in-place` 相同的操作。
 
-```swift
-import Noise
-import NoiseSerde
-import NoiseBackend
+## 高级构建选项
 
-// 初始化 Racket VM
-let racket = Racket()
+### 选择特定包
 
-// 加载 noise-serde 运行时
-racket.load(zo: URL(fileURLWithPath: Bundle.module.path(forResource: "noise-serde", ofType: "zo")!))
+默认情况下，构建系统会安装 `main-distribution` 和 `main-distribution-test` 包。如果你想只安装特定包：
 
-// 加载你的 Racket 代码
-racket.load(zo: URL(fileURLWithPath: Bundle.module.path(forResource: "my-app", ofType: "zo")!))
-
-// 创建一个 Swift 对象
-let user = User(id: 123, name: "Alice", email: "alice@example.com", scores: [0.9, 0.8, 0.95])
-
-// 序列化为字节数据
-var buffer = Data()
-let outputPort = DataOutputPort(buffer: &buffer)
-user.write(to: outputPort)
-
-// 在 Racket 端反序列化（通过 RPC）
-let result = backend.call("process-user", with: user)
-
-// Racket 返回的结果自动反序列化为 Swift 类型
-let processed: User = result.get()
+```bash
+make in-place PKGS="gui-lib readline-lib"
 ```
 
-## 八、总结
+### 并行构建
 
-Noise 的集成可以概括为以下几个核心要点：
+利用多核 CPU 加速构建过程：
 
-### 文件组成
+```bash
+# 使用 GNU make 的 -j 选项
 
-| 文件类型 | 作用 | 谁提供 |
-|---------|------|--------|
-| 静态库 (.a) | Racket VM 的机器码 | Racket CS 构建 |
-| 头文件 (.h) | C 函数接口声明 | Racket CS + Noise 封装 |
-| Boot 文件 (.boot) | Racket VM 启动镜像 | Racket CS 构建 |
-| .zo 文件 | Racket 编译后的字节码 | 你的 Racket 代码 + noise-serde-lib |
+make -j4
 
-### 编译时流程
+# 或者使用更便携的 JOBS 变量
 
-```text
-Racket CS 源码 → .a → .xcframework
-                        ↓
-                Swift Package Manager
-                        ↓
-Noise Swift 代码 ← 头文件 ← .xcframework
-                        ↓
-              链接生成 Noise.framework
+make JOBS=4
 ```
 
-### 运行时流程
+### 基础构建 vs 完整构建
 
-```text
-Swift 应用启动
-    ↓
-Racket.init() → racket_boot()
-    ↓
-读取 boot 文件 → 初始化 Racket VM
-    ↓
-加载 .zo 文件 → 注册 Racket 模块
-    ↓
-Swift ↔ Racket 通信
+**基础构建（仅构建最小化 Racket）**：
+
+```bash
+make base
 ```
 
-### 关键理解
+`make base` 只编译 Racket 核心，不下载或安装任何包。构建完成后，你需要手动使用 `raco pkg` 安装所需的包。这种方式适合交叉编译引导或需要完全控制包安装的场景。
 
-1. **Noise 不是一个静态链接库**，而是一个 Swift 库，它依赖 RacketCS.xcframework
-2. **RacketCS.xcframework 只包含 VM**，不包含业务逻辑
-3. **Boot 文件由 Swift 代码加载**，在运行时初始化 Racket VM
-4. **头文件被 Swift 编译器使用**，生成调用 C 函数的代码
-5. **noise-serde-lib 是双重角色**：编译时生成 Swift 代码，运行时提供 Racket 序列化逻辑
+**完整构建（默认）**：
 
-Noise 的设计体现了语言的互操作性之美，通过精心设计的分层架构，让 Swift 和 Racket 能够无缝协作。希望本文能够帮助你更好地理解这个复杂但优雅的系统。
+```bash
+make in-place
+```
+
+`make in-place` 在 `make base` 的基础上，还会从包服务器下载并安装默认包，并构建文档。
+
+### 使用本地包构建
+
+如果你已经下载过包，想避免再次下载：
+
+```bash
+make as-is
+```
+
+`make as-is` 使用 `pkgs/` 目录中已有的包和本地缓存构建，不会从网络下载任何新包。如果本地缺少必要的包，构建可能会失败。
+
+### 构建特定实现
+
+Racket 有两种主要实现：
+
+**Racket CS（Chez Scheme 实现）- 默认推荐**
+
+```bash
+# 构建并安装 Racket CS（这是 make in-place 的简写）
+
+make cs
+
+# 或更明确的方式
+
+make in-place VM=cs
+```
+
+> **注意**：`make cs` 不是独立构建模式，而是 `make in-place` 的变体，明确指定使用 Racket CS 实现。
+
+**Racket BC（字节码实现）**
+
+```bash
+# 构建并安装 Racket BC
+
+make bc
+
+# 或更明确的方式
+
+make in-place VM=bc
+```
+
+**同时构建两种实现**：
+
+```bash
+make both
+```
+
+### 增量构建
+
+如果你已经完成过一次完整构建，只想重新编译已修改的代码而不下载新包：
+
+```bash
+# 重新构建 CS，不下载新包
+
+make also-cs
+
+# 重新构建 BC，不下载新包
+
+make also-bc
+```
+
+### Unix 风格安装
+
+如果你想要一个干净的生产环境安装，可以使用 Unix 风格：
+
+```bash
+# Unix/Linux
+
+make unix-style PREFIX=/usr/local/racket
+
+# macOS
+
+make unix-style PREFIX=/usr/local/racket
+```
+
+Unix 风格安装会将 Racket 安装到指定目录，构建完成后可以删除源代码目录。
+
+**注意**：Unix 风格安装在 Windows 上不支持。
+
+## 重新构建和更新
+
+### 更新现有构建
+
+```bash
+# 拉取最新代码
+
+git pull
+
+# 重新构建（会下载新包）
+
+make in-place
+
+# 或者只重新构建，不下载新包
+
+make as-is
+```
+
+### 本地修改后重新构建
+
+如果你只修改了 `pkgs/` 目录中的包文件，不需要完整的重新构建：
+
+```bash
+./racket/bin/raco setup
+```
+
+如果修改了核心 Racket 代码（`racket/src/` 或 `racket/collects/`）：
+
+```bash
+# 完整重新构建
+
+make as-is
+```
+
+## 常见问题排查
+
+### 构建失败
+
+**macOS 代码签名问题**：在 Apple Silicon 上可能会遇到代码签名冲突，这是构建系统和现代 macOS 工具链之间的已知问题。
+
+**内存不足**：如果构建过程中遇到内存问题，尝试减少并行构建的任务数：
+
+```bash
+make JOBS=2
+```
+
+**依赖问题**：确保所有必需的构建工具都已安装。
+
+**包下载失败**：检查网络连接，或使用 `make as-is` 使用本地已有包。
+
+### 平台特定问题
+
+**Windows 构建错误**：
+- 确保使用正确的 Visual Studio 版本
+- 确保正确配置了构建环境变量（`msvcprep.bat`）
+- 确保使用 `nmake` 而不是 `make`
+
+**Linux 编译器兼容性**：
+- 某些旧发行版可能需要更新的编译器
+- 考虑使用容器环境进行构建
+
+## 交叉编译和定制化构建（高级）
+
+对于高级用户，Racket 支持交叉编译，但需要正确配置多个变量：
+
+```bash
+# 为 ARM Linux 交叉编译（简化示例）
+
+make in-place \
+  CONFIGURE_ARGS="--host=arm-linux" \
+  BOOTFILE_RACKET=/path/to/host/racket
+```
+
+> **注意**：交叉编译是一个复杂的主题，完整的配置涉及 `BOOTFILE_RACKET`、`SCHEME`、`CS_HOST_WORKAREA_PREFIX` 等多个变量。详细信息请参考 build.md。
+
+你可以通过 `CONFIGURE_ARGS` 传递额外的配置选项：
+
+```bash
+make in-place CONFIGURE_ARGS="--enable-pthread"
+```
+
+## 构建时间对比
+
+不同的构建模式有不同的构建时间：
+
+| 构建模式 | 构建时间 | 说明 |
+|---------|---------|------|
+| 源代码发行版（带预构建包） | 最快 | 只需编译平台特定组件 |
+| Git 仓库原地构建（首次） | 中等 | 完整构建 + 包下载 |
+| Git 仓库原地构建（更新） | 较快 | 增量构建 |
+| 最小化构建（make base） | 最基础 | 不包含包和文档 |
+
+## 总结和建议
+
+根据你的需求选择合适的构建方式：
+
+| 用途 | 推荐方式 |
+|------|----------|
+| 开发和贡献 | `make in-place` |
+| 生产环境部署 | `make unix-style PREFIX=...` |
+| 快速测试最新功能（有缓存） | `make as-is` |
+| 学习 Racket 内部 | `make base` + 手动包安装 |
+| 明确使用 CS 实现 | `make cs` 或 `make in-place VM=cs` |
+
+从源代码编译 Racket 可能看起来有些复杂，但一旦你设置了环境并理解了构建过程，就会体会到它的灵活性和强大功能。无论是为了贡献代码，还是为了获取最新特性，掌握 Racket 的编译过程都是值得的投资。
