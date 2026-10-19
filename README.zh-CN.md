@@ -72,7 +72,7 @@
 |----|------|
 | 27 | 面向对象——Racket 的 class 与对象 |
 | 28 | 第一个 GUI——窗口、按钮与点击计数器 |
-| 29 | 为什么 Racket GUI 写不出"现代界面" |
+| 29 | 为什么 Racket GUI 写不出“现代界面” |
 | 30 | 8 种控件覆盖九成场景——按语义选 Racket GUI 控件 |
 | 31 | Racket GUI 控件清单——内置库一次看全 |
 | 32 | 自定义控件——子类化 canvas 自己画 |
@@ -135,7 +135,7 @@
 
 ## 技术栈
 
-- **框架**：Next.js 14（App Router，静态导出）
+- **框架**：Next.js 16（App Router，静态导出）
 - **样式**：Tailwind CSS
 - **内容**：MDX
 - **代码高亮**：rehype-highlight

@@ -3,6 +3,8 @@ import { getParts, getPreface } from '@/lib/content'
 
 const BASE = 'https://racket.jrtx.site'
 
+export const dynamic = 'force-static'
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const entries: MetadataRoute.Sitemap = [{ url: `${BASE}/` }]
 

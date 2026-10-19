@@ -206,9 +206,12 @@ canvas 被缩放时，系统会自动触发一次 `on-paint`——重画本身�
  [min-value min-val]
  [max-value max-val]
  [init-value min-val]
- [callback (λ (s _)
- (send lbl set-label
- (format "~a: ~a" label-text (send s get-value)))))]))
+ [callback
+  (λ (s _)
+   (send lbl set-label
+         (format "~a: ~a"
+                 label-text
+                 (send s get-value))))]))
 
  ; 对外暴露当前值
  (define/public (get-value)
@@ -245,4 +248,3 @@ canvas 被缩放时，系统会自动触发一次 `on-paint`——重画本身�
 
 > 当你重写 `on-paint` 的那一刻，你写的就不是一个控件，而是一个微型 UI 引擎的一小块。
 
-> 📷 待补运行截图：子类化 canvas% 自绘图形效果（`racket-gui-custom-canvas-drawing.png`）

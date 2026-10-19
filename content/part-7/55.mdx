@@ -6,7 +6,7 @@
 
 ## Koyo 是什么？
 
-Koyo 是一个基于 Racket 的 Web 应用开发工具包。它不只是简单地包装了 Racket 内置的 web-server，而是提供了一个 **完整的开发生态系统**，包含了现代 Web 应用所需的一切功能。
+Koyo 是一个基于 Racket 的 Web 应用开发工具包。它不只是简单地包装 Racket 内置的 web-server，而是提供了一套面向真实应用的工程组件，覆盖许多常见的现代 Web 开发需求。
 
 最妙的是，Koyo 的所有组件都是 **解耦** 的。你想用什么就用什么，不想用的就丢掉——没有强制绑定的全家桶。
 
@@ -76,7 +76,7 @@ $ raco koyo console
 (define-option database-url "DATABASE_URL" "postgres://localhost/db")
 ```
 
-开发环境使用 `.env.default` 文件，生产环境通过 `raco koyo deploy -e` 命令传递环境变量，配置管理从未如此优雅。
+开发环境可以使用 `.env.default` 提供默认配置。Koyo 的部署工具链通常先用 `raco koyo dist` 生成发行目录，再用 `raco koyo deploy` 部署；`-e NAME VALUE` 可以在部署时补充单个环境变量。具体服务管理和反向代理布局应以当前 Koyo 部署文档与目标服务器配置为准。
 
 ## 开发工作流一览
 
@@ -106,7 +106,7 @@ Koyo 的架构设计理念非常现代——**基于组件的架构**。每个�
 
 ## 开箱即用的功能清单
 
-Koyo 包含现代 Web 应用所需的所有标准功能：
+Koyo 及其配套组件覆盖了许多常见的 Web 应用功能，例如：
 
 - HTTP 服务器和中间件
 - 数据库连接池和事务管理
