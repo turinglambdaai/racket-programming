@@ -1,0 +1,46 @@
+name: Verify book
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Setup Racket 9.3
+        uses: Bogdanp/setup-racket@v1
+        with:
+          version: '9.3'
+
+      - name: Install site dependencies
+        run: npm ci
+
+      - name: Check content metadata and links
+        run: npm run check:content
+
+      - name: Parse every Racket code block
+        run: npm run check:racket
+
+      - name: Run Web examples smoke test
+        run: racket tests/web-smoke.rkt
+
+      - name: Type-check site
+        run: npm run typecheck
+
+      - name: Build static site
+        run: npm run build
