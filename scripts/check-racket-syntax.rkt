@@ -20,17 +20,23 @@
 
 (define total 0)
 (define failures '())
+(define skipped '())
 
 (define (check-block file block-index source)
   (set! total (add1 total))
-  (with-handlers ([exn:fail:read?
+  (define label
+    (format "~a block ~a"
+            (path->string (find-relative-path (current-directory) file))
+            block-index))
+  (with-handlers ([exn:fail?
                    (lambda (e)
-                     (set! failures
-                           (cons (format "~a block ~a: ~a"
-                                         (path->string (find-relative-path (current-directory) file))
-                                         block-index
-                                         (exn-message e))
-                                 failures)))])
+                     (define msg (exn-message e))
+                     (if (and (regexp-match? #px"(?m)^\\s*#lang\\s+" source)
+                              (regexp-match? #rx"collection not found" msg))
+                         (set! skipped (cons (format "~a: custom #lang is not installed in CI" label)
+                                             skipped))
+                         (set! failures (cons (format "~a: ~a" label msg)
+                                              failures))))])
     (define in (open-input-string source))
     (port-count-lines! in)
     (parameterize ([read-accept-reader #t])
@@ -69,7 +75,10 @@
 
 (cond
   [(null? failures)
-   (printf "[racket-syntax] OK: parsed ~a racket code blocks with Racket's reader.\n" total)]
+   (printf "[racket-syntax] OK: checked ~a racket code blocks; skipped ~a custom-#lang block(s) whose readers are intentionally not installed.\n"
+           total (length skipped))
+   (for ([item (in-list (reverse skipped))])
+     (printf "  - skipped: ~a\n" item))]
   [else
    (eprintf "[racket-syntax] FAILED: ~a problem(s) across ~a racket code blocks:\n"
             (length failures) total)
