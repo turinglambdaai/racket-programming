@@ -18,21 +18,23 @@ export function generateStaticParams() {
   return getAllChapterPaths().map(p => ({ part: p.part, slug: p.slug }))
 }
 
-export function generateMetadata({ params }: { params: { part: string; slug: string } }) {
-  const part = getParts().find(p => p.id === params.part)
-  const chapter = part?.chapters.find(c => c.slug === params.slug)
+export async function generateMetadata({ params }: { params: Promise<{ part: string; slug: string }> }) {
+  const { part: partId, slug } = await params
+  const part = getParts().find(p => p.id === partId)
+  const chapter = part?.chapters.find(c => c.slug === slug)
   if (!part || !chapter) return { title: '章节未找到' }
   const partLabel = part.id === 'appendix' ? part.title : `第 ${part.number} 部分 · ${part.title}`
   return { title: `${chapter.title} | ${partLabel}` }
 }
 
-export default async function ChapterPage({ params }: { params: { part: string; slug: string } }) {
-  const part = getParts().find(p => p.id === params.part)
-  const chapter = part?.chapters.find(c => c.slug === params.slug)
+export default async function ChapterPage({ params }: { params: Promise<{ part: string; slug: string }> }) {
+  const { part: partId, slug } = await params
+  const part = getParts().find(p => p.id === partId)
+  const chapter = part?.chapters.find(c => c.slug === slug)
 
   if (!part || !chapter) notFound()
 
-  const content = getChapterContent(params.part, params.slug)
+  const content = getChapterContent(partId, slug)
   if (!content) notFound()
 
   return (
@@ -55,12 +57,12 @@ export default async function ChapterPage({ params }: { params: { part: string; 
         />
       </div>
       <PageFeedback
-        pagePath={`/book/${params.part}/chapter/${params.slug}`}
+        pagePath={`/book/${partId}/chapter/${slug}`}
         pageTitle={chapter.title}
-        sourcePath={`content/${params.part}/${params.slug}.mdx`}
+        sourcePath={`content/${partId}/${slug}.mdx`}
         editLabel="编辑本章"
       />
-      <ChapterNav currentPart={params.part} currentSlug={params.slug} />
+      <ChapterNav currentPart={partId} currentSlug={slug} />
     </article>
   )
 }
