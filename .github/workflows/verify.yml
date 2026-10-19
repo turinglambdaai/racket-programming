@@ -23,7 +23,7 @@ jobs:
           cache: 'npm'
 
       - name: Setup Racket 9.3
-        uses: Bogdanp/setup-racket@v1
+        uses: Bogdanp/setup-racket@v1.15
         with:
           version: '9.3'
 
