@@ -135,7 +135,7 @@
 
 ## 技术栈
 
-- **框架**：Next.js 14（App Router，静态导出）
+- **框架**：Next.js 16（App Router，静态导出）
 - **样式**：Tailwind CSS
 - **内容**：MDX
 - **代码高亮**：rehype-highlight
