@@ -30,6 +30,9 @@ jobs:
       - name: Install site dependencies
         run: npm ci
 
+      - name: Audit npm dependencies
+        run: npm audit --audit-level=low
+
       - name: Check content metadata and links
         run: npm run check:content
 
@@ -38,6 +41,9 @@ jobs:
 
       - name: Run Web examples smoke test
         run: racket tests/web-smoke.rkt
+
+      - name: Run FFI memory smoke test
+        run: racket tests/ffi-smoke.rkt
 
       - name: Type-check site
         run: npm run typecheck
