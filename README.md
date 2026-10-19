@@ -121,7 +121,7 @@ Every page has a feedback box: readers can report an issue with the page — or 
 
 ## Tech Stack
 
-- **Framework**: Next.js 14 (App Router, static export)
+- **Framework**: Next.js 16 (App Router, static export)
 - **Styling**: Tailwind CSS
 - **Content**: MDX
 - **Code Highlighting**: rehype-highlight
