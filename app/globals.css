@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.js";
 
 :root {
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -59,3 +58,50 @@ pre code {
 .hljs-operator, .hljs-punctuation { color: #C7C2B8; }
 .hljs-emphasis { font-style: italic; }
 .hljs-strong { font-weight: 700; }
+
+
+/* Lightweight book typography, replacing the legacy typography plugin. */
+.prose {
+  color: #4A4740;
+  line-height: 1.8;
+}
+.prose > :first-child { margin-top: 0; }
+.prose > :last-child { margin-bottom: 0; }
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  color: #2A2820;
+  font-weight: 700;
+  line-height: 1.25;
+  scroll-margin-top: 5rem;
+}
+.prose h1 { margin: 0 0 1.5rem; font-size: 2.25rem; }
+.prose h2 { margin: 2.5rem 0 1rem; font-size: 1.75rem; }
+.prose h3 { margin: 2rem 0 0.75rem; font-size: 1.35rem; }
+.prose h4 { margin: 1.5rem 0 0.5rem; font-size: 1.1rem; }
+.prose p, .prose ul, .prose ol, .prose blockquote, .prose pre, .prose table {
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.prose ul, .prose ol { padding-left: 1.5rem; }
+.prose ul { list-style: disc; }
+.prose ol { list-style: decimal; }
+.prose li { margin: 0.35rem 0; }
+.prose a { color: #A8532D; text-decoration: underline; text-underline-offset: 0.15em; }
+.prose strong { color: #2A2820; font-weight: 700; }
+.prose blockquote {
+  border-left: 3px solid #FFC5A8;
+  padding-left: 1rem;
+  color: #6B6760;
+  font-style: italic;
+}
+.prose pre {
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  background: #2A2820;
+  padding: 1rem 1.25rem;
+  color: #F5F3EE;
+}
+.prose table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.prose th, .prose td { border-bottom: 1px solid #E0DCD2; padding: 0.65rem 0.75rem; text-align: left; }
+.prose th { color: #2A2820; font-weight: 700; }
+.prose hr { margin: 2rem 0; border: 0; border-top: 1px solid #E0DCD2; }
+.prose img { max-width: 100%; height: auto; border-radius: 0.5rem; }
