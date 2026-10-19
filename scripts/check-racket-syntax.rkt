@@ -31,7 +31,7 @@
   (with-handlers ([exn:fail?
                    (lambda (e)
                      (define msg (exn-message e))
-                     (if (and (regexp-match? #px"(^|\\n)\\s*#lang\\s+" source)
+                     (if (and (regexp-match? #px"^\\s*#lang\\s+" (string-trim source))
                               (regexp-match? #rx"collection not found" msg))
                          (set! skipped (cons (format "~a: custom #lang is not installed in CI" label)
                                              skipped))
