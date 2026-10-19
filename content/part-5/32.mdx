@@ -206,9 +206,12 @@ canvas 被缩放时，系统会自动触发一次 `on-paint`——重画本身�
  [min-value min-val]
  [max-value max-val]
  [init-value min-val]
- [callback (λ (s _)
- (send lbl set-label
- (format "~a: ~a" label-text (send s get-value)))))]))
+ [callback
+  (λ (s _)
+   (send lbl set-label
+         (format "~a: ~a"
+                 label-text
+                 (send s get-value))))]))
 
  ; 对外暴露当前值
  (define/public (get-value)
