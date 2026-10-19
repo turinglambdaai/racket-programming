@@ -6,7 +6,7 @@
 
 但随着需求稍微增加，你会立刻遇到一些本质性的问题：
 
-- 返回字符串和返回页面有什么区别？
+- 一个普通 Racket 值怎样变成 HTTP response？
 - 浏览器为什么能“理解”我返回的内容？
 - 状态码、Header 到底是谁在处理？
 - Racket 的 Web Server 到底抽象到了哪一层？
@@ -37,33 +37,37 @@ Racket 的 Web Server 非常直接地采用了这个模型：
 #lang racket
 
 (require web-server/servlet
- web-server/servlet-env)
+ web-server/servlet-env
+ web-server/http)
 
 (define (start request)
- "Hello, Racket")
+ (response/xexpr
+  '(html
+    (body
+     (p "Hello, Racket")))))
 
 (serve/servlet start
  #:port 8000
  #:launch-browser? #t)
 ```
 
-你只定义了一个函，返回一个字符串，但浏览器却能正确显示内容。
-数
+你只定义了一个函数，返回一个由 `response/xexpr` 构造的响应，浏览器就能正确显示内容。
+
 这说明：
-**Racket 已经帮你完成了一整套 Web 协议层的工作。**
+**Racket 已经把 HTTP response 的结构封装成了普通的数据与函数接口。**
 
-## 三、为什么返回字符串也能工作？
+## 三、为什么不能直接返回字符串？
 
-在这个例子中，你并没有显式构造任何 HTTP 数据，但 Racket Web Server 会：
+Servlet 的处理函数需要返回一个 `can-be-response?`。Racket 默认的 `any->response` 不会把任意字符串或 xexpr 自动转换成 response，所以直接返回 `"Hello"` 并不是可靠的最小示例。
 
-- 自动创建一个 HTTP 响应
-- 使用 `200 OK` 状态码
-- 设置合适的 `Content-Type`
-- 把返回值作为响应体发送给浏览器
+`response/xexpr` 做的事情包括：
 
-这是一个 **为初学者准备的默认行为**，目的是：
+- 创建 HTTP response
+- 默认使用 `200` 状态码
+- 默认使用 HTML MIME 类型
+- 把 xexpr 序列化为响应体
 
-> 让你先关注“程序在做什么”，而不是“协议长什么样”。
+也就是说，你仍然不用手写 HTTP 报文，但要显式说清楚“这个值怎样成为响应”。
 
 ## 四、Web 返回的不只是“内容”
 
@@ -172,9 +176,9 @@ Web 开始变得可组合、可抽象、可复用。
 
 对初学者来说，一个健康的进阶路径是：
 
-1. 返回字符串，理解整体流程
-2. 使用 xexpr，理解结构化页面
-3. 显式构造响应，理解协议边界
+1. 用 `response/xexpr` 写出最小响应，理解整体流程
+2. 操作 xexpr，理解结构化页面
+3. 使用不同响应构造器，理解协议边界
 4. 控制状态码和 Header
 5. 返回不同类型的数据
 
