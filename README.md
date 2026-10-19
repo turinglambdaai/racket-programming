@@ -8,7 +8,7 @@
 
 ## Book Structure
 
-Seven volumes (60 chapters) + appendix (11 articles). The narrative arc goes: plain困惑 entry → theoretical foundations → hands-on practice.
+Seven volumes (60 chapters) + appendix (3 articles). The narrative arc goes: plain困惑 entry → theoretical foundations → hands-on practice.
 
 ### Part 1: 起点：编程与计算的本质 (Foundations)
 
@@ -90,18 +90,18 @@ Seven volumes (60 chapters) + appendix (11 articles). The narrative arc goes: pl
 | 44 | 三种执行方式——同一份代码为何表现不同 |
 | 45 | REPL——边想边跑的开发方式 |
 | 46 | 读懂 Racket 官方文档——Guide、Reference 与 contract |
-| 47 | Racket 工程工具 raco 全面指南：从包管理到应用发布 |
-| 48 | Racket 包开发实战：手把手教你发布符合官方标准的 Racket 包 |
-| 49 | Racket 开发者必看：如何将应用打包成 Windows macOS Linux 安装包 |
-| 50 | Racket 结构化编辑解决方案 |
-| 51 | Racket 编码规范：提升 Lisp 代码的可维护性实践 |
+| 47 | raco——Racket 工程体系的控制中心 |
+| 48 | 发布一个 Racket 包——从零走完官方流程 |
+| 49 | 打包分发——从可执行文件到三平台安装包 |
+| 50 | 结构化编辑——让 DrRacket 替你管括号 |
+| 51 | 编码规范——别把 Lisp 写成只写语言 |
 | 52 | 数据库是什么——从 Excel 到 SQL |
 | 53 | 从零开始用 Racket 写一个 Web Server |
 | 54 | 深入理解 Racket Web Server 的工作方式 |
-| 55 | 用 Koyo 构建 Web 应用：Racket 爱好者的现代开发工具箱 |
-| 56 | 如何让 Racket Web 程序稳定上线Nginx 反向代理部署指南 |
-| 57 | 还在用字符串写 HTMLRacket xexpr 让你像写代码一样构建页面 |
-| 58 | 还在为 Racket 与 C 交互发愁一文搞定 FFI 调用、内存管理与常见陷阱 |
+| 55 | Koyo——Racket Web 应用的现代工具箱 |
+| 56 | 稳定上线——给 Racket Web 程序配好 Nginx |
+| 57 | xexpr——HTML 是数据，不是字符串 |
+| 58 | FFI——当 Racket 需要调用 C |
 | 59 | 一个 Racket 程序员的工具箱 |
 | 60 | 如何构建和运行 ActivityLog2 |
 
