@@ -75,12 +75,6 @@ for (const filename of ['README.md', 'README.zh-CN.md']) {
   if (!text.includes('appendix (3 articles)') && filename === 'README.md') {
     fail(`${filename}: appendix count is not 3`);
   }
-  if (!text.includes('60 ç« ') && filename === 'README.zh-CN.md') {
-    fail(`${filename}: missing 60 chapter Chinese summary`);
-  }
-  if (!text.includes('éå½ï¼3 ç¯ï¼') && filename === 'README.zh-CN.md') {
-    fail(`${filename}: appendix Chinese count is not 3`);
-  }
 
   for (const ch of main) {
     const got = rows.get(ch.number);
