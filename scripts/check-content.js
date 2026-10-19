@@ -62,7 +62,7 @@ function parseReadmeChapterRows(filename) {
   const rows = new Map();
   for (const match of text.matchAll(/^\|\s*(\d+)\s*\|\s*(.*?)\s*\|\s*$/gm)) {
     const n = Number(match[1]);
-    if (n >= 1 && n <= 60) rows.set(n, match[2].trim());
+    if (n >= 1 && n <= 60 && !rows.has(n)) rows.set(n, match[2].trim());
   }
   return { text, rows };
 }
