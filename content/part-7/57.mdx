@@ -87,7 +87,7 @@ xexpr：
 
 ## 四、在 Web Server 中使用 xexpr
 
-Racket 的 Web Server 可以直接把 xexpr 作为响应返回。
+xexpr 本身只是数据；在 servlet 里，需要用 `response/xexpr` 把它转换成 HTTP response。
 
 一个最小示例：
 
@@ -95,15 +95,17 @@ Racket 的 Web Server 可以直接把 xexpr 作为响应返回。
 #lang racket
 
 (require web-server/servlet
- web-server/servlet-env)
+ web-server/servlet-env
+ web-server/http)
 
 (define (start request)
- '(html
- (head
- (title "xexpr Example"))
- (body
- (h1 "Hello")
- (p "This page is written in xexpr."))))
+ (response/xexpr
+  '(html
+    (head
+     (title "xexpr Example"))
+    (body
+     (h1 "Hello")
+     (p "This page is written in xexpr.")))))
 
 (serve/servlet start
  #:port 8000
@@ -115,7 +117,7 @@ Racket 的 Web Server 可以直接把 xexpr 作为响应返回。
 
 这里的关键点在于：
 
-> **你返回的是结构，Racket 负责把它转成 HTML**
+> **你先用 xexpr 表达结构，再用 `response/xexpr` 把结构序列化成 HTML response**
 
 ## 五、HTML 属性如何表示？
 
