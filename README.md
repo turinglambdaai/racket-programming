@@ -8,7 +8,7 @@
 
 ## Book Structure
 
-Seven volumes (60 chapters) + appendix (3 articles). The narrative arc goes: plain困惑 entry → theoretical foundations → hands-on practice.
+Seven volumes (60 chapters) + appendix (3 articles). The narrative arc goes: from plain confusion to theoretical foundations to hands-on practice.
 
 ### Part 1: 起点：编程与计算的本质 (Foundations)
 
