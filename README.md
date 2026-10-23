@@ -180,3 +180,11 @@ Chapters live under `content/<part-id>/`. The build step (`scripts/build-content
 
 Book text is licensed under [CC BY-NC-SA 4.0](LICENSE); code samples are
 additionally available under the [MIT License](LICENSE-CODE).
+
+## Delivery priorities (2026-10-23)
+
+The current product review issue linked from AGENTS owns the next bounded slice and its acceptance scenarios. Follow the existing product specification and the [family delivery standard](https://github.com/turinglambdaai/turinglambdaai.github.io/blob/master/docs/PRODUCT-STANDARD.md). Hardware, native-platform and live-payment gates remain explicit; this documentation update does not claim they passed.
+
+## Feedback and diagnostics
+
+Report reproducible bugs and feature requests through [GitHub Issues](https://github.com/turinglambdaai/racket-programming/issues). Include the release, OS/architecture and steps; inspect and redact diagnostics before sharing. Do not post API keys, license files, vault contents or private documents. For sensitive security reports, follow SECURITY.md when present; otherwise request a private contact route without disclosing sensitive details. Nothing is uploaded automatically.
