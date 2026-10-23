@@ -6,6 +6,12 @@
 
 [English](README.md) · **中文** · 🌐 [racket.jrtx.site](https://racket.jrtx.site)
 
+## 阅读入口
+
+[开始阅读《Racket 编程入门》](https://racket.jrtx.site/) · [阅读、隐私与更正](docs/READING.zh-CN.md)
+
+本书免费，无需账号。章节属于教学材料，不保证所有示例在每个 Racket 版本、系统或硬件上都可运行。记录实际环境，并将错误与章节前提核对。
+
 ## 全书结构
 
 七卷正文（60 章）+ 附录（3 篇）。叙事弧线：朴素困惑入口 → 理论根基 → 实战落地。
@@ -193,7 +199,3 @@ racket-programming/
 ## 许可证
 
 正文采用 [CC BY-NC-SA 4.0](LICENSE) 许可；代码示例同时适用 [MIT License](LICENSE-CODE)。
-
-## 反馈与诊断
-
-问题和建议请使用 [GitHub Issues](https://github.com/turinglambdaai/racket-programming/issues)，附版本、系统/架构和复现步骤。分享前先检查并脱敏诊断；不要公开 API key、授权凭据、密钥库或私有文档。安全敏感问题优先按 SECURITY.md 联系；未提供私密渠道时，先请求私下联系方式，不在公开 issue 中披露敏感细节。此入口不会自动上传数据。

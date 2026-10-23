@@ -19,6 +19,10 @@ export default function HomePage() {
         <p className="text-lg text-sand-600 max-w-xl mx-auto mb-2 leading-relaxed">
           从零基础到独立开发应用，全面掌握 Racket 编程。
         </p>
+        <p className="text-sm text-sand-500 max-w-xl mx-auto mb-5 leading-relaxed">
+          免费中文在线书，无需注册。按章节练习，遇到问题可通过页面反馈提交勘误。
+          <span lang="en" className="block mt-2">A free online book in Chinese. A complete English edition is not available.</span>
+        </p>
         <p className="text-base text-sand-500 mb-10">
           吉人 著
         </p>
@@ -91,8 +95,12 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-sand-200 py-10">
         <p className="text-center text-xs text-sand-400">
-          Racket 编程入门 · 吉人 · 使用 Next.js 构建
+          Racket 编程入门 · 吉人 · 正文 CC BY-NC-SA 4.0 · 示例代码 MIT
         </p>
+        <nav aria-label="Reader help" className="text-center text-sm text-sand-600 mt-4 flex flex-wrap justify-center gap-5 px-6">
+          <a className="underline underline-offset-4" href="https://github.com/turinglambdaai/racket-programming/blob/master/docs/READING.zh-CN.md">阅读与勘误</a>
+          <a lang="en" className="underline underline-offset-4" href="https://github.com/turinglambdaai/racket-programming/blob/master/docs/READING.md">Reader information</a>
+        </nav>
       </footer>
     </div>
   )
